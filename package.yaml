@@ -1,10 +1,16 @@
 name:                SPOP
 version:             0.1.0.0
-github:              "githubuser/SPOP"
+github:              ArturB/SPOP
 license:             BSD3
-author:              "Author name here"
-maintainer:          "example@example.com"
-copyright:           "2018 Author name here"
+author: 
+- Artur M. Brodzki
+- Michał Starosta
+- Michał Dzięciołowski
+maintainer:          artur.brodzki@gmail.com
+copyright: 
+- 2018 Artur M. Brodzki
+- 2018 Michał Starosta
+- 2018 Michał Dzięciołowski
 
 extra-source-files:
 - README.md
@@ -24,9 +30,12 @@ dependencies:
 
 library:
   source-dirs: src
+  dependencies:
+  - aeson
+  - containers
 
 executables:
-  SPOP-exe:
+  wolf:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -37,7 +46,7 @@ executables:
     - SPOP
 
 tests:
-  SPOP-test:
+  wolf-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:

@@ -1,6 +1,10 @@
+{-|
+Module      : Main
+Description : Main executable of Wolf and sheeps game. 
+
+-}
+
 module Main where
 
-import Lib
-
 main :: IO ()
-main = someFunc
+main = print "Wolf and sheeps"
