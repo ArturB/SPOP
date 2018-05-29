@@ -1,27 +1,33 @@
 {-|
 Module      : Board
-Description : Game checkboard.
+Description : Game checkerboard.
+
+The file includes game chackerboard datatype, represented as Map from Board.Coorinates to Board.Field. It also includes functions to update the board and AI to apply moves automatically. 
+
 -}
 
 module Board where
 
-import Data.Char
+import           Board.Coordinate
+import           Board.Field
+import           Data.Char
+import           Data.List
 import qualified Data.Map as Map
 import           GHC.Generics
-import Board.Coordinate
-import Board.Field
-import Data.List
-import Move
-import Move.Status
-import Move.Direction
+import           Move
+import           Move.Status
+import           Move.Direction
 
+-- | Error message, displayed if initial position of the wolf is not in the range 1..4. 
 invalidWolfPosition :: String
 invalidWolfPosition = "Wolf position must be integer in range 1..4" 
 
+-- | Checkerboard datatype
 newtype Board = Board {
-    board :: Map.Map Coordinate Field
+    board :: Map.Map Coordinate Field -- ^ Map from Board.Coordinate to Board.Field
 } deriving (Eq, Generic)
 
+-- | Print the board on the screen, line by line, with fields coordinates and with boundaries. 
 instance Show Board where
     show (Board b) = 
         let upperLine = "    -----------------"
@@ -36,7 +42,9 @@ instance Show Board where
             line8 = " 8 |   " ++ "   " `intercalate` [show (b Map.! B8), show (b Map.! D8),  show (b Map.! F8), show (b Map.! H8)] ++ " |"
         in "\n" ++ line0 ++ "\n" ++ upperLine ++ "\n" ++ line1 ++ "\n" ++ line2 ++ "\n" ++ line3 ++ "\n" ++ line4 ++ "\n" ++ line5 ++ "\n" ++ line6 ++ "\n" ++ line7 ++ "\n" ++ line8 ++ "\n" ++ upperLine ++ "\n"
 
-init :: Int -> Board
+-- | Return a initial board to start the game. 
+init :: Int -- ^ Initial wolf position. Must be positive integer from 1 to 4 and denotes wolf position on the first (upper) row of the board, from left to right. 
+     -> Board -- ^ Initial board state. 
 init wolfPos = 
     let wolfC = case wolfPos of
             1 -> A1
@@ -49,7 +57,10 @@ init wolfPos =
                        else (c,Empty)) <$> [A1 .. H8]
     in Board $ Map.fromList maplist
 
-moveStatus :: Board -> Move -> Status
+-- | Checks if given move is valid on the board or is invalid for some reason. 
+moveStatus :: Board  -- ^ Board state. 
+           -> Move   -- ^ Move to check. 
+           -> Status -- ^ Move validity. 
 moveStatus (Board b) (Move s d)
        | b Map.! s == Empty = NothingToMove
        | s `move` d == Board.Coordinate.OutOfBoard = Move.Status.OutOfBoard
@@ -57,10 +68,14 @@ moveStatus (Board b) (Move s d)
        | b Map.! s == Sheep && vaxis d == Down = SheepCannotGoBack
        | otherwise = OK
 
+-- | Infix equivalent of 'moveStatus'. 
 (??) :: Board -> Move -> Status
 (??) = moveStatus
 
-apply :: Board -> Move -> Board
+-- | Execute a move on a board. 
+apply :: Board -- ^ Initial board state. 
+      -> Move  -- ^ Move to execute.
+      -> Board -- ^ New board state. 
 apply brd@(Board b) mv@(Move s d) = 
     let movedActor = b Map.! s
         destination = s |>> d
@@ -68,26 +83,34 @@ apply brd@(Board b) mv@(Move s d) =
         b3 = Map.insert s Empty b2
     in  if brd ?? mv == OK then Board b3 else brd
 
+-- | Infix equivalent of 'apply'. 
 (>>>) :: Board -> Move -> Board
 (>>>) = apply
 
+-- | Return a wolf coordinates on the board. 
 wolfCoord :: Board -> Coordinate
 wolfCoord (Board b) = fst $ head $ Map.toList $ ( == Wolf) `Map.filter` b 
 
+-- | Return a list of sheep coordinates on the board. 
 sheepsCoords :: Board -> [Coordinate]
 sheepsCoords (Board b) = fst <$> Map.toList ((== Sheep) `Map.filter` b)
 
+-- | List of moves of the wolf, that are valid in the current board state. 
 validWolfMoves :: Board -> [Move]
 validWolfMoves brd = 
     let possibleMoves = Move (wolfCoord brd) <$> [DownLeft .. UpRight]
     in  (\m -> brd ?? m == OK) `filter` possibleMoves
 
+-- | List of moves of the sheeps, that are valid in the current board state.  
 validSheepsMoves :: Board -> [Move]
 validSheepsMoves brd = 
     let possibleMovesCombinations = (\ sp d -> (sp, d)) <$> sheepsCoords brd <*> [UpLeft .. UpRight]
         possibleMoves = uncurry Move <$> possibleMovesCombinations
     in  (\m -> brd ?? m == OK) `filter` possibleMoves
 
+-- | Calculates points, that wolf can use to rate its current situation in the game. With more points, the wolf situation is considered better. This function can be used as heuristics in mini-max algorithm and the game tree. 
+{-| Changing the formula has great impact on the result of the game. Currently, wolf points are calculated as @points = wolf distance from upper board edge + 2 * mean distance from wolf to sheeps@
+-}
 wolfPoints :: Board -> Double
 wolfPoints brd = 
     let wolfC = wolfCoord brd
@@ -96,17 +119,30 @@ wolfPoints brd =
         wolfSheepsAvgDist = sum (distance <$> [wolfC] <*> sheepsCs) / fromIntegral (length sheepsCs)
     in  distFromUpperEdge + 2 * wolfSheepsAvgDist
 
+-- | Points that sheeps can use to rate their current situation in the game. Calculated as @-1 * 'wolfPoints'@. 
 sheepsPoints :: Board -> Double
 sheepsPoints brd = -1 * wolfPoints brd
 
-bestMove :: (Board -> Double) -> Board -> [Move] -> Maybe (Move,Double)
+-- | From list of possible moves, return the best (the one that leads to the state of the board with biggest amount of points).
+bestMove :: (Board -> Double)   -- ^ A function used to rate the board state. May be either wolfPoints or sheepsPoints. 
+         -> Board               -- ^ Current board state. 
+         -> [Move]              -- ^ List of moves to analyze. May be empty, if no moves are possible (one side won the game). 
+         -> Maybe (Move,Double) -- ^ The best move, alogside with its rating. May be Nothing, if list of moves to analyze is empty. 
 bestMove points brd ms = 
     let moves = (\m -> (m, points (brd >>> m))) <$> ms
     in  if null moves then Nothing else Just $ foldl1' (\(m1,p1) (m2,p2) -> if p1 > p2 then (m1,p1) else (m2,p2)) moves
 
-bestWolfMove :: Int -> Board -> Maybe (Move,Double)
+-- | Auxiliary function, calculates the best wolf move on the current board state. Applies 'wolfPoints' and 'validWolfMoves' to bestMove. 
+{-| TODO: add recursive analyze of game tree. -}
+bestWolfMove :: Int                 -- ^ Depth of game tree to analyze. 
+             -> Board               -- ^ Current board state.
+             -> Maybe (Move,Double) -- ^ The best wolf move, alogside with its rating. May be Nothing, if list of moves to analyze is empty. 
 bestWolfMove 0 brd = bestMove wolfPoints brd $ validWolfMoves brd
-        
-bestSheepMove :: Int -> Board -> Maybe (Move,Double)
+
+-- | Auxiliary function, calculates the best sheeps move on the current board state. Applies 'sheepsPoints' and 'validSheepsMoves' to bestMove. 
+{-| TODO: add recursive analyze of game tree -}
+bestSheepMove :: Int                 -- ^ Depth of game tree to analyze. 
+              -> Board               -- ^ Current board state. 
+              -> Maybe (Move,Double) -- ^ The best wolf move, alogside with its rating. May be Nothing, if list of moves to analyze is empty. 
 bestSheepMove 0 brd = bestMove sheepsPoints brd $ validSheepsMoves brd
 

@@ -1,22 +1,26 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">{-|
-Module      : Move
-Description : Move datatype.
--}</span><span>
-</span><a name="line-5"></a><span>
-</span><a name="line-6"></a><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Move</span><span> </span><span class="hs-keyword">where</span><span>
-</span><a name="line-7"></a><span>
-</span><a name="line-8"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Aeson</span><span>
-</span><a name="line-9"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">GHC</span><span class="hs-operator">.</span><span class="hs-identifier">Generics</span><span>
-</span><a name="line-10"></a><span class="hs-keyword">import</span><span> </span><a href="Move.Direction.html"><span class="hs-identifier">Move</span><span class="hs-operator">.</span><span class="hs-identifier">Direction</span></a><span>
-</span><a name="line-11"></a><span class="hs-keyword">import</span><span> </span><a href="Board.Coordinate.html"><span class="hs-identifier">Board</span><span class="hs-operator">.</span><span class="hs-identifier">Coordinate</span></a><span>
-</span><a name="line-12"></a><span>
-</span><a name="line-13"></a><span class="hs-keyword">data</span><span> </span><a name="Move"><a href="Move.html#Move"><span class="hs-identifier">Move</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a name="Move"><a href="Move.html#Move"><span class="hs-identifier">Move</span></a></a><span> </span><span class="hs-special">{</span><span>
-</span><a name="line-14"></a><span>    </span><a name="start"><a href="Move.html#start"><span class="hs-identifier">start</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><a href="Board.Coordinate.html#Coordinate"><span class="hs-identifier hs-type">Coordinate</span></a><span class="hs-special">,</span><span> </span><span>
-</span><a name="line-15"></a><span>    </span><a name="direction"><a href="Move.html#direction"><span class="hs-identifier">direction</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><a href="Move.Direction.html#Direction"><span class="hs-identifier hs-type">Direction</span></a><span>
-</span><a name="line-16"></a><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Eq</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Generic</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Read</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Show</span><span class="hs-special">)</span><span>
-</span><a name="line-17"></a><span>
-</span><a name="line-18"></a><span class="hs-keyword">instance</span><span> </span><span class="hs-identifier hs-type">FromJSON</span><span> </span><a href="Move.html#Move"><span class="hs-identifier hs-type">Move</span></a><span>
-</span><a name="line-19"></a><span class="hs-keyword">instance</span><span> </span><span class="hs-identifier hs-type">ToJSON</span><span> </span><a href="Move.html#Move"><span class="hs-identifier hs-type">Move</span></a><span>
-</span><a name="line-20"></a><span>
-</span><a name="line-21"></a><span>
-</span><a name="line-22"></a></pre></body></html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-comment">{-|
+Module      : Move
+Description : Move datatype.
+Datatype that represnts a move that player can do. 
+-}</span><span></span><span>
+</span><a name="line-6"></a><span></span><span>
+</span><a name="line-7"></a><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Move</span><span> </span><span class="hs-keyword">where</span><span></span><span>
+</span><a name="line-8"></a><span></span><span>
+</span><a name="line-9"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Aeson</span><span></span><span>
+</span><a name="line-10"></a><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">GHC</span><span class="hs-operator">.</span><span class="hs-identifier">Generics</span><span></span><span>
+</span><a name="line-11"></a><span class="hs-keyword">import</span><span> </span><a href="Move.Direction.html"><span class="hs-identifier">Move</span><span class="hs-operator">.</span><span class="hs-identifier">Direction</span></a><span></span><span>
+</span><a name="line-12"></a><span class="hs-keyword">import</span><span> </span><a href="Board.Coordinate.html"><span class="hs-identifier">Board</span><span class="hs-operator">.</span><span class="hs-identifier">Coordinate</span></a><span></span><span>
+</span><a name="line-13"></a><span></span><span>
+</span><a name="line-14"></a><span class="hs-comment">-- | Move datatype. </span><span>
+</span><a name="line-15"></a><span class="hs-keyword">data</span><span> </span><a name="Move"><a href="Move.html#Move"><span class="hs-identifier">Move</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a name="Move"><a href="Move.html#Move"><span class="hs-identifier">Move</span></a></a><span> </span><span class="hs-special">{</span><span>         </span><span>
+</span><a name="line-16"></a><span>    </span><a name="start"><a href="Move.html#start"><span class="hs-identifier">start</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><a href="Board.Coordinate.html#Coordinate"><span class="hs-identifier hs-type">Coordinate</span></a><span class="hs-special">,</span><span>   </span><span class="hs-comment">-- ^ Coordinate of the actor (wolf or sheep) to move. </span><span>
+</span><a name="line-17"></a><span>    </span><a name="direction"><a href="Move.html#direction"><span class="hs-identifier">direction</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><a href="Move.Direction.html#Direction"><span class="hs-identifier hs-type">Direction</span></a><span> </span><span class="hs-comment">-- ^ Move direction. </span><span>
+</span><a name="line-18"></a><span class="hs-special">}</span><span>  </span><span class="hs-glyph">|</span><span> </span><a name="AI"><a href="Move.html#AI"><span class="hs-identifier">AI</span></a></a><span> </span><span class="hs-special">{</span><span></span><span>
+</span><a name="line-19"></a><span>    </span><a name="level"><a href="Move.html#level"><span class="hs-identifier">level</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Int</span><span> </span><span class="hs-comment">-- ^ AI move, contrary to user move, contains AI level (basically a game tree depth to analyze). </span><span>
+</span><a name="line-20"></a><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Eq</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Generic</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Read</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Show</span><span class="hs-special">)</span><span></span><span>
+</span><a name="line-21"></a><span></span><span>
+</span><a name="line-22"></a><span class="hs-keyword">instance</span><span> </span><span class="hs-identifier hs-type">FromJSON</span><span> </span><a href="Move.html#Move"><span class="hs-identifier hs-type">Move</span></a><span> </span><span>
+</span><a name="line-23"></a><span class="hs-keyword">instance</span><span> </span><span class="hs-identifier hs-type">ToJSON</span><span> </span><a href="Move.html#Move"><span class="hs-identifier hs-type">Move</span></a><span></span><span>
+</span><a name="line-24"></a><span></span><span>
+</span><a name="line-25"></a><span></span><span>
+</span><a name="line-26"></a></pre></body></html>

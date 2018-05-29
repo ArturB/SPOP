@@ -1,6 +1,7 @@
 {-|
 Module      : Board.Coordinate
-Description : Possible board coordinates
+Description : Board fields coordinates
+Datatype that contains valid coordinates of checkerboard fields. 
 -}
 
 module Board.Coordinate where
@@ -10,6 +11,7 @@ import           Data.Char
 import           GHC.Generics
 import           Move.Direction
 
+-- | Checkerboard has 8x8 size. Only black fields are used, so there are total 32 valid board fields and its coordinates. Also, out of the board coordinate is added, as moving a wolf or sheep may sometimes result in getting out of the board edges. 
 data Coordinate = A1 | A3 | A5 | A7 |
                   B2 | B4 | B6 | B8 |
                   C1 | C3 | C5 | C7 |
@@ -23,6 +25,7 @@ data Coordinate = A1 | A3 | A5 | A7 |
 instance FromJSON Coordinate
 instance ToJSON Coordinate
 
+-- | Calculate a new coordinate, after executing a move in specified direction. 
 move :: Coordinate -> Direction -> Coordinate
 c `move` d = 
     let char  = head $ show c
@@ -33,9 +36,11 @@ c `move` d =
         validCodes = show <$> [A1 .. H8]
     in  if code2 `notElem` validCodes then OutOfBoard else (read code2 :: Coordinate)
 
+-- | Infix equivalent of 'move'. 
 (|>>) :: Coordinate -> Direction -> Coordinate
 (|>>) = move
 
+-- | Calculate euclidean distance between two fields. 
 distance :: Coordinate -> Coordinate -> Double
 distance c1 c2 = 
     let x1 = fromIntegral $ ord $ head $ show c1

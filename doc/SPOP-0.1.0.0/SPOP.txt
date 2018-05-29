@@ -3,16 +3,24 @@
 
 
 -- | Please see the README on GitHub at
---   <a>https://github.com/githubuser/SPOP#readme</a>
+--   <a>https://github.com/ArturB/SPOP#readme</a>
 @package SPOP
 @version 0.1.0.0
 
 
+-- | Datatype that represents the board field. A field may be empty, or may
+--   be occupied by sheep or by a wolf.
 module Board.Field
+
+-- | Datatype that represents the board field. A field may be empty, or may
+--   be occupied by sheep or by a wolf.
 data Field
 Empty :: Field
 Sheep :: Field
 Wolf :: Field
+
+-- | Print a wolf as <tt>w</tt> character, sheep as <tt>o</tt> character
+--   and empty field as a dot.
 instance GHC.Generics.Generic Board.Field.Field
 instance GHC.Classes.Ord Board.Field.Field
 instance GHC.Classes.Eq Board.Field.Field
@@ -23,18 +31,29 @@ instance GHC.Show.Show Board.Field.Field
 
 
 module Move.Direction
+
+-- | On a checkerboard, a move can be done diagonally: up or down and left
+--   or right.
 data Direction
 DownLeft :: Direction
 DownRight :: Direction
 UpLeft :: Direction
 UpRight :: Direction
+
+-- | On vertical axis, a move can be done up or down.
 data VAxis
 Down :: VAxis
 Up :: VAxis
+
+-- | On horizontal axis, a move can be done left or right.
 data HAxis
 Left :: HAxis
 Right :: HAxis
+
+-- | Return vertical direction of the move.
 vaxis :: Direction -> VAxis
+
+-- | Return horizontal direction of the move.
 haxis :: Direction -> HAxis
 instance GHC.Show.Show Move.Direction.HAxis
 instance GHC.Read.Read Move.Direction.HAxis
@@ -58,7 +77,13 @@ instance Data.Aeson.Types.FromJSON.FromJSON Move.Direction.Direction
 instance Data.Aeson.Types.ToJSON.ToJSON Move.Direction.Direction
 
 
+-- | Datatype that contains valid coordinates of checkerboard fields.
 module Board.Coordinate
+
+-- | Checkerboard has 8x8 size. Only black fields are used, so there are
+--   total 32 valid board fields and its coordinates. Also, out of the
+--   board coordinate is added, as moving a wolf or sheep may sometimes
+--   result in getting out of the board edges.
 data Coordinate
 A1 :: Coordinate
 A3 :: Coordinate
@@ -93,8 +118,16 @@ H4 :: Coordinate
 H6 :: Coordinate
 H8 :: Coordinate
 OutOfBoard :: Coordinate
+
+-- | Calculate a new coordinate, after executing a move in specified
+--   direction.
 move :: Coordinate -> Direction -> Coordinate
+
+-- | Infix equivalent of <a>move</a>.
 (|>>) :: Coordinate -> Direction -> Coordinate
+
+-- | Calculate euclidean distance between two fields.
+distance :: Coordinate -> Coordinate -> Double
 instance GHC.Show.Show Board.Coordinate.Coordinate
 instance GHC.Read.Read Board.Coordinate.Coordinate
 instance GHC.Classes.Ord Board.Coordinate.Coordinate
@@ -105,11 +138,23 @@ instance Data.Aeson.Types.FromJSON.FromJSON Board.Coordinate.Coordinate
 instance Data.Aeson.Types.ToJSON.ToJSON Board.Coordinate.Coordinate
 
 
+-- | Datatype that represnts a move that player can do.
 module Move
+
+-- | Move datatype.
 data Move
 Move :: Coordinate -> Direction -> Move
+
+-- | Coordinate of the actor (wolf or sheep) to move.
 [start] :: Move -> Coordinate
+
+-- | Move direction.
 [direction] :: Move -> Direction
+AI :: Int -> Move
+
+-- | AI move, contrary to user move, contains AI level (basically a game
+--   tree depth to analyze).
+[level] :: Move -> Int
 instance GHC.Show.Show Move.Move
 instance GHC.Read.Read Move.Move
 instance GHC.Generics.Generic Move.Move
@@ -118,12 +163,27 @@ instance Data.Aeson.Types.FromJSON.FromJSON Move.Move
 instance Data.Aeson.Types.ToJSON.ToJSON Move.Move
 
 
+-- | Some moves are forbidden for some reasons.
 module Move.Status
+
+-- | Possible move statuses.
 data Status
+
+-- | Move is valid and can be executed.
 OK :: Status
+
+-- | Move cannot be done, because on specified position is no wolf or sheep
+--   to move.
 NothingToMove :: Status
+
+-- | Move cannot be done, because it will result in getting out the board.
 OutOfBoard :: Status
+
+-- | Move cannot be done, because destination is occupied by another sheep
+--   or wolf.
 DestinationNotEmpty :: Status
+
+-- | Move cannot be done, because sheeps can only move upwards.
 SheepCannotGoBack :: Status
 instance GHC.Show.Show Move.Status.Status
 instance GHC.Read.Read Move.Status.Status
@@ -135,16 +195,85 @@ instance Data.Aeson.Types.FromJSON.FromJSON Move.Status.Status
 instance Data.Aeson.Types.ToJSON.ToJSON Move.Status.Status
 
 
+-- | The file includes game chackerboard datatype, represented as Map from
+--   Board.Coorinates to Board.Field. It also includes functions to update
+--   the board and AI to apply moves automatically.
 module Board
+
+-- | Error message, displayed if initial position of the wolf is not in the
+--   range 1..4.
 invalidWolfPosition :: String
+
+-- | Checkerboard datatype
 newtype Board
 Board :: Map Coordinate Field -> Board
+
+-- | Map from Board.Coordinate to Board.Field
 [board] :: Board -> Map Coordinate Field
+
+-- | Print the board on the screen, line by line, with fields coordinates
+--   and with boundaries.
+
+-- | Return a initial board to start the game.
 init :: Int -> Board
+
+-- | Checks if given move is valid on the board or is invalid for some
+--   reason.
 moveStatus :: Board -> Move -> Status
+
+-- | Infix equivalent of <a>moveStatus</a>.
 (??) :: Board -> Move -> Status
+
+-- | Execute a move on a board.
 apply :: Board -> Move -> Board
+
+-- | Infix equivalent of <a>apply</a>.
 (>>>) :: Board -> Move -> Board
+
+-- | Return a wolf coordinates on the board.
+wolfCoord :: Board -> Coordinate
+
+-- | Return a list of sheep coordinates on the board.
+sheepsCoords :: Board -> [Coordinate]
+
+-- | List of moves of the wolf, that are valid in the current board state.
+validWolfMoves :: Board -> [Move]
+
+-- | List of moves of the sheeps, that are valid in the current board
+--   state.
+validSheepsMoves :: Board -> [Move]
+
+-- | Calculates points, that wolf can use to rate its current situation in
+--   the game. With more points, the wolf situation is considered better.
+--   This function can be used as heuristics in mini-max algorithm and the
+--   game tree.
+--   
+--   Changing the formula has great impact on the result of the game.
+--   Currently, wolf points are calculated as <tt>points = wolf distance
+--   from upper board edge + 2 * mean distance from wolf to sheeps</tt>
+wolfPoints :: Board -> Double
+
+-- | Points that sheeps can use to rate their current situation in the
+--   game. Calculated as <tt>-1 * <a>wolfPoints</a></tt>.
+sheepsPoints :: Board -> Double
+
+-- | From list of possible moves, return the best (the one that leads to
+--   the state of the board with biggest amount of points).
+bestMove :: (Board -> Double) -> Board -> [Move] -> Maybe (Move, Double)
+
+-- | Auxiliary function, calculates the best wolf move on the current board
+--   state. Applies <a>wolfPoints</a> and <a>validWolfMoves</a> to
+--   bestMove.
+--   
+--   TODO: add recursive analyze of game tree.
+bestWolfMove :: Int -> Board -> Maybe (Move, Double)
+
+-- | Auxiliary function, calculates the best sheeps move on the current
+--   board state. Applies <a>sheepsPoints</a> and <a>validSheepsMoves</a>
+--   to bestMove.
+--   
+--   TODO: add recursive analyze of game tree
+bestSheepMove :: Int -> Board -> Maybe (Move, Double)
 instance GHC.Generics.Generic Board.Board
 instance GHC.Classes.Eq Board.Board
 instance GHC.Show.Show Board.Board
