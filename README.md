@@ -13,5 +13,5 @@
   - Haddock HTML reference is in doc. Update documentation by:
     - on Windows: stack haddock; cp .\.stack-work\install\d0705508\doc\SPOP-0.1.0.0 .\doc
     - on Linux:   stack haddock; cp .\.stack-work\install\x86_64-linux\doc\SPOP-0.1.0.0 .\doc
-  - Package properties are defined in package.yaml. Properties include project name, structure (list of executables and source files) and dependencies. 
+  - Package properties are defined in package.yaml. Properties include project name, structure (list of executables and source files) and dependencies. Adding new dependency or new source file requires to add it into package.yaml also. 
 
