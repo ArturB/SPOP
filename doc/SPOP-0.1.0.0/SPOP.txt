@@ -8,10 +8,18 @@
 @version 0.1.0.0
 
 
-module Board
-
-
-module Move
+module Board.Field
+data Field
+Empty :: Field
+Sheep :: Field
+Wolf :: Field
+instance GHC.Generics.Generic Board.Field.Field
+instance GHC.Classes.Ord Board.Field.Field
+instance GHC.Classes.Eq Board.Field.Field
+instance GHC.Enum.Enum Board.Field.Field
+instance Data.Aeson.Types.FromJSON.FromJSON Board.Field.Field
+instance Data.Aeson.Types.ToJSON.ToJSON Board.Field.Field
+instance GHC.Show.Show Board.Field.Field
 
 
 module Move.Direction
@@ -20,12 +28,123 @@ DownLeft :: Direction
 DownRight :: Direction
 UpLeft :: Direction
 UpRight :: Direction
+data VAxis
+Down :: VAxis
+Up :: VAxis
+data HAxis
+Left :: HAxis
+Right :: HAxis
+vaxis :: Direction -> VAxis
+haxis :: Direction -> HAxis
+instance GHC.Show.Show Move.Direction.HAxis
+instance GHC.Read.Read Move.Direction.HAxis
+instance GHC.Classes.Ord Move.Direction.HAxis
+instance GHC.Generics.Generic Move.Direction.HAxis
+instance GHC.Classes.Eq Move.Direction.HAxis
+instance GHC.Enum.Enum Move.Direction.HAxis
+instance GHC.Show.Show Move.Direction.VAxis
+instance GHC.Read.Read Move.Direction.VAxis
+instance GHC.Classes.Ord Move.Direction.VAxis
+instance GHC.Generics.Generic Move.Direction.VAxis
+instance GHC.Classes.Eq Move.Direction.VAxis
+instance GHC.Enum.Enum Move.Direction.VAxis
 instance GHC.Show.Show Move.Direction.Direction
 instance GHC.Read.Read Move.Direction.Direction
+instance GHC.Classes.Ord Move.Direction.Direction
 instance GHC.Generics.Generic Move.Direction.Direction
 instance GHC.Classes.Eq Move.Direction.Direction
+instance GHC.Enum.Enum Move.Direction.Direction
 instance Data.Aeson.Types.FromJSON.FromJSON Move.Direction.Direction
 instance Data.Aeson.Types.ToJSON.ToJSON Move.Direction.Direction
 
 
+module Board.Coordinate
+data Coordinate
+A1 :: Coordinate
+A3 :: Coordinate
+A5 :: Coordinate
+A7 :: Coordinate
+B2 :: Coordinate
+B4 :: Coordinate
+B6 :: Coordinate
+B8 :: Coordinate
+C1 :: Coordinate
+C3 :: Coordinate
+C5 :: Coordinate
+C7 :: Coordinate
+D2 :: Coordinate
+D4 :: Coordinate
+D6 :: Coordinate
+D8 :: Coordinate
+E1 :: Coordinate
+E3 :: Coordinate
+E5 :: Coordinate
+E7 :: Coordinate
+F2 :: Coordinate
+F4 :: Coordinate
+F6 :: Coordinate
+F8 :: Coordinate
+G1 :: Coordinate
+G3 :: Coordinate
+G5 :: Coordinate
+G7 :: Coordinate
+H2 :: Coordinate
+H4 :: Coordinate
+H6 :: Coordinate
+H8 :: Coordinate
+OutOfBoard :: Coordinate
+move :: Coordinate -> Direction -> Coordinate
+(|>>) :: Coordinate -> Direction -> Coordinate
+instance GHC.Show.Show Board.Coordinate.Coordinate
+instance GHC.Read.Read Board.Coordinate.Coordinate
+instance GHC.Classes.Ord Board.Coordinate.Coordinate
+instance GHC.Generics.Generic Board.Coordinate.Coordinate
+instance GHC.Classes.Eq Board.Coordinate.Coordinate
+instance GHC.Enum.Enum Board.Coordinate.Coordinate
+instance Data.Aeson.Types.FromJSON.FromJSON Board.Coordinate.Coordinate
+instance Data.Aeson.Types.ToJSON.ToJSON Board.Coordinate.Coordinate
+
+
+module Move
+data Move
+Move :: Coordinate -> Direction -> Move
+[start] :: Move -> Coordinate
+[direction] :: Move -> Direction
+instance GHC.Show.Show Move.Move
+instance GHC.Read.Read Move.Move
+instance GHC.Generics.Generic Move.Move
+instance GHC.Classes.Eq Move.Move
+instance Data.Aeson.Types.FromJSON.FromJSON Move.Move
+instance Data.Aeson.Types.ToJSON.ToJSON Move.Move
+
+
 module Move.Status
+data Status
+OK :: Status
+NothingToMove :: Status
+OutOfBoard :: Status
+DestinationNotEmpty :: Status
+SheepCannotGoBack :: Status
+instance GHC.Show.Show Move.Status.Status
+instance GHC.Read.Read Move.Status.Status
+instance GHC.Classes.Ord Move.Status.Status
+instance GHC.Generics.Generic Move.Status.Status
+instance GHC.Classes.Eq Move.Status.Status
+instance GHC.Enum.Enum Move.Status.Status
+instance Data.Aeson.Types.FromJSON.FromJSON Move.Status.Status
+instance Data.Aeson.Types.ToJSON.ToJSON Move.Status.Status
+
+
+module Board
+invalidWolfPosition :: String
+newtype Board
+Board :: Map Coordinate Field -> Board
+[board] :: Board -> Map Coordinate Field
+init :: Int -> Board
+moveStatus :: Board -> Move -> Status
+(??) :: Board -> Move -> Status
+apply :: Board -> Move -> Board
+(>>>) :: Board -> Move -> Board
+instance GHC.Generics.Generic Board.Board
+instance GHC.Classes.Eq Board.Board
+instance GHC.Show.Show Board.Board
