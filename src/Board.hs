@@ -12,7 +12,8 @@ import Board.Coordinate
 import Board.Field
 import Data.List
 
-invalidWolfPosition :: String = "Wolf position must be integer in range 1..4" 
+invalidWolfPosition :: String
+invalidWolfPosition = "Wolf position must be integer in range 1..4" 
 
 newtype Board = Board {
     board :: Map.Map Coordinate Field
@@ -22,14 +23,14 @@ instance Show Board where
     show (Board b) = 
         let upperLine = "    -----------------"
             line0 = "     " ++ "A B C D E F G H"
-            line1 = " 1 | " ++         "   " `intercalate` [show (b Map.! A1), show (b Map.! C1),  show (b Map.! E1), show (b Map.! G1)] ++ "   |"
-            line2 = " 2 | " ++ "  " ++ "   " `intercalate` [show (b Map.! B2), show (b Map.! D2),  show (b Map.! F2), show (b Map.! H2)] ++ " |"
-            line3 = " 3 | " ++         "   " `intercalate` [show (b Map.! A3), show (b Map.! C3),  show (b Map.! E3), show (b Map.! G3)] ++ "   |"
-            line4 = " 4 | " ++ "  " ++ "   " `intercalate` [show (b Map.! B4), show (b Map.! D4),  show (b Map.! F4), show (b Map.! H4)] ++ " |"
-            line5 = " 5 | " ++         "   " `intercalate` [show (b Map.! A5), show (b Map.! C5),  show (b Map.! E5), show (b Map.! G5)] ++ "   |"
-            line6 = " 6 | " ++ "  " ++ "   " `intercalate` [show (b Map.! B6), show (b Map.! D6),  show (b Map.! F6), show (b Map.! H6)] ++ " |"
-            line7 = " 7 | " ++         "   " `intercalate` [show (b Map.! A7), show (b Map.! C7),  show (b Map.! E7), show (b Map.! G7)] ++ "   |"
-            line8 = " 8 | " ++ "  " ++ "   " `intercalate` [show (b Map.! B8), show (b Map.! D8),  show (b Map.! F8), show (b Map.! H8)] ++ " |"
+            line1 = " 1 | "   ++ "   " `intercalate` [show (b Map.! A1), show (b Map.! C1),  show (b Map.! E1), show (b Map.! G1)] ++ "   |"
+            line2 = " 2 |   " ++ "   " `intercalate` [show (b Map.! B2), show (b Map.! D2),  show (b Map.! F2), show (b Map.! H2)] ++ " |"
+            line3 = " 3 | "   ++ "   " `intercalate` [show (b Map.! A3), show (b Map.! C3),  show (b Map.! E3), show (b Map.! G3)] ++ "   |"
+            line4 = " 4 |   " ++ "   " `intercalate` [show (b Map.! B4), show (b Map.! D4),  show (b Map.! F4), show (b Map.! H4)] ++ " |"
+            line5 = " 5 | "   ++ "   " `intercalate` [show (b Map.! A5), show (b Map.! C5),  show (b Map.! E5), show (b Map.! G5)] ++ "   |"
+            line6 = " 6 |   " ++ "   " `intercalate` [show (b Map.! B6), show (b Map.! D6),  show (b Map.! F6), show (b Map.! H6)] ++ " |"
+            line7 = " 7 | "   ++ "   " `intercalate` [show (b Map.! A7), show (b Map.! C7),  show (b Map.! E7), show (b Map.! G7)] ++ "   |"
+            line8 = " 8 |   " ++ "   " `intercalate` [show (b Map.! B8), show (b Map.! D8),  show (b Map.! F8), show (b Map.! H8)] ++ " |"
         in "\n" ++ line0 ++ "\n" ++ upperLine ++ "\n" ++ line1 ++ "\n" ++ line2 ++ "\n" ++ line3 ++ "\n" ++ line4 ++ "\n" ++ line5 ++ "\n" ++ line6 ++ "\n" ++ line7 ++ "\n" ++ line8 ++ "\n" ++ upperLine ++ "\n"
 
 init :: Int -> Board
@@ -45,4 +46,6 @@ init wolfPos =
                        else (c,Empty)) <$> [A1 .. H8]
     in Board $ Map.fromList maplist
 
-moveStatus :: Board -> Move -> Move.Status
+--moveStatus :: Board -> Move -> Move.Status
+--moveStatus (Board b) (Move d s)
+--       | 
