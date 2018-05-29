@@ -250,7 +250,8 @@ validSheepsMoves :: Board -> [Move]
 --   
 --   Changing the formula has great impact on the result of the game.
 --   Currently, wolf points are calculated as <tt>points = wolf distance
---   from upper board edge + 2 * mean distance from wolf to sheeps</tt>
+--   from upper board edge + 2 * number of valid wolf moves + mean distance
+--   from wolf to sheeps</tt>
 wolfPoints :: Board -> Double
 
 -- | Points that sheeps can use to rate their current situation in the
@@ -274,6 +275,12 @@ bestWolfMove :: Int -> Board -> Maybe (Move, Double)
 --   
 --   TODO: add recursive analyze of game tree
 bestSheepMove :: Int -> Board -> Maybe (Move, Double)
+
+-- | JSONize and save board to file
+toFile :: Board -> String -> IO ()
+
+-- | Read board state from file
+fromFile :: String -> IO Board
 instance GHC.Generics.Generic Board.Board
 instance GHC.Classes.Eq Board.Board
 instance GHC.Show.Show Board.Board

@@ -115,15 +115,16 @@ validSheepsMoves brd =
     in  (\m -> brd ?? m == OK) `filter` possibleMoves
 
 -- | Calculates points, that wolf can use to rate its current situation in the game. With more points, the wolf situation is considered better. This function can be used as heuristics in mini-max algorithm and the game tree. 
-{-| Changing the formula has great impact on the result of the game. Currently, wolf points are calculated as @points = wolf distance from upper board edge + 2 * mean distance from wolf to sheeps@
+{-| Changing the formula has great impact on the result of the game. Currently, wolf points are calculated as @points = wolf distance from upper board edge + 2 * number of valid wolf moves + mean distance from wolf to sheeps@
 -}
 wolfPoints :: Board -> Double
 wolfPoints brd = 
     let wolfC = wolfCoord brd
         sheepsCs = sheepsCoords brd
-        distFromUpperEdge = fromIntegral $ ord (show wolfC !! 1) - ord (pred '1')
+        noMoves = fromIntegral $ length $ validWolfMoves brd
+        distFromUpperEdge = abs $ fromIntegral $ ord (show wolfC !! 1) - ord (pred '1')
         wolfSheepsAvgDist = sum (distance <$> [wolfC] <*> sheepsCs) / fromIntegral (length sheepsCs)
-    in  distFromUpperEdge + 2 * wolfSheepsAvgDist
+    in  distFromUpperEdge + 2 * noMoves + wolfSheepsAvgDist
 
 -- | Points that sheeps can use to rate their current situation in the game. Calculated as @-1 * 'wolfPoints'@. 
 sheepsPoints :: Board -> Double

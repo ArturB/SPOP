@@ -34,13 +34,13 @@ gameLoop b = do
         let afterSheepMove = b >>> fst (fromJust sheepMove)
         cursorUp boardLines
         print afterSheepMove
-        threadDelay 500000
+        threadDelay 330000
         let wolfMove = bestWolfMove 0 afterSheepMove
         if isNothing wolfMove then sheepsWon else do
             let afterWolfMove = afterSheepMove >>> fst (fromJust wolfMove)
             cursorUp boardLines
             print afterWolfMove 
-            threadDelay 500000
+            threadDelay 330000
             if wolfCoord afterWolfMove `elem` [B8, D8, F8, H8] then wolfWon
             else gameLoop afterWolfMove
 
