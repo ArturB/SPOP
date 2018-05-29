@@ -36,6 +36,8 @@ library:
   source-dirs: src
   dependencies:
   - aeson
+  - bytestring
+  - conduit
   - containers
 
 executables:

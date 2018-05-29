@@ -10,9 +10,13 @@ module Board where
 
 import           Board.Coordinate
 import           Board.Field
+import           Conduit
+import           Data.Aeson
+import qualified Data.ByteString.Lazy as ByteString
 import           Data.Char
 import           Data.List
 import qualified Data.Map as Map
+import           Data.Maybe
 import           GHC.Generics
 import           Move
 import           Move.Status
@@ -145,4 +149,18 @@ bestSheepMove :: Int                 -- ^ Depth of game tree to analyze.
               -> Board               -- ^ Current board state. 
               -> Maybe (Move,Double) -- ^ The best wolf move, alogside with its rating. May be Nothing, if list of moves to analyze is empty. 
 bestSheepMove 0 brd = bestMove sheepsPoints brd $ validSheepsMoves brd
+
+-- | JSONize and save board to file
+toFile :: Board  -- ^ Board state to save.
+       -> String -- ^ File name. 
+       -> IO ()
+toFile (Board b) fileName = ByteString.writeFile fileName $ encode (Map.toList b)
+
+-- | Read board state from file
+fromFile :: String -- ^ File name. 
+         -> IO Board
+fromFile fileName = do
+    bs <- ByteString.readFile fileName
+    let bmap = Map.fromList $ fromJust $ decode bs
+    return $ Board bmap
 

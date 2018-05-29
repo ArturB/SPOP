@@ -27,6 +27,7 @@ sheepsWon = putStrLn "   GAME OVER! SHEEPS WON\n"
 
 gameLoop :: Board.Board -> IO ()
 gameLoop b = do
+    toFile b "game.was"
     let boardLines = 1 + length (lines (show b))
     let sheepMove = bestSheepMove 0 b
     if isNothing sheepMove then wolfWon else do
