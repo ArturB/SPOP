@@ -13,6 +13,8 @@ import           Board.Field
 import           Conduit
 import           Data.Aeson
 import qualified Data.ByteString.Lazy as ByteString
+--import qualified Data.ByteString.Builder as Builder
+import qualified Data.ByteString.Char8 as BC
 import           Data.Char
 import           Data.List
 import qualified Data.Map as Map
@@ -154,7 +156,10 @@ bestSheepMove 0 brd = bestMove sheepsPoints brd $ validSheepsMoves brd
 toFile :: Board  -- ^ Board state to save.
        -> String -- ^ File name. 
        -> IO ()
-toFile (Board b) fileName = ByteString.writeFile fileName $ encode (Map.toList b)
+--toFile (Board b) fileName = ByteString.writeFile fileName $ encode (Map.toList b)
+toFile (Board b) fileName = do
+    let bs = encode $ Map.toList b
+    runConduitRes $ sourceLazy bs .| sinkFile fileName
 
 -- | Read board state from file
 fromFile :: String -- ^ File name. 
