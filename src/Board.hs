@@ -11,6 +11,9 @@ import           GHC.Generics
 import Board.Coordinate
 import Board.Field
 import Data.List
+import Move
+import Move.Status
+import Move.Direction
 
 invalidWolfPosition :: String
 invalidWolfPosition = "Wolf position must be integer in range 1..4" 
@@ -46,6 +49,25 @@ init wolfPos =
                        else (c,Empty)) <$> [A1 .. H8]
     in Board $ Map.fromList maplist
 
---moveStatus :: Board -> Move -> Move.Status
---moveStatus (Board b) (Move d s)
---       | 
+moveStatus :: Board -> Move -> Status
+moveStatus (Board b) (Move s d)
+       | b Map.! s == Empty = NothingToMove
+       | b Map.! (s `move` d) /= Empty = DestinationNotEmpty
+       | b Map.! s == Sheep && vaxis d == Down = SheepCannotGoBack
+       | s `move` d == Board.Coordinate.OutOfBoard = Move.Status.OutOfBoard
+       | otherwise = OK
+
+(??) :: Board -> Move -> Status
+(??) = moveStatus
+
+apply :: Board -> Move -> Board
+apply brd@(Board b) mv@(Move s d) = 
+    let movedActor = b Map.! s
+        destination = s |>> d
+        b2 = Map.insert destination movedActor b
+        b3 = Map.insert s Empty b2
+    in  if brd ?? mv == OK then Board b3 else brd
+
+(>>>) :: Board -> Move -> Board
+(>>>) = apply
+

@@ -8,14 +8,14 @@ module Move where
 import Data.Aeson
 import GHC.Generics
 import Move.Direction
-import Board
 import Board.Coordinate
 
 data Move = Move {
-    direction :: Direction,
-    start :: Coordinate
+    start :: Coordinate, 
+    direction :: Direction
 } deriving (Eq, Generic, Read, Show)
 
 instance FromJSON Move
 instance ToJSON Move
+
 

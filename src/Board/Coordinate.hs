@@ -22,15 +22,15 @@ data Coordinate = A1 | A3 | A5 | A7 |
 instance FromJSON Coordinate
 instance ToJSON Coordinate
 
-isLeftEdge :: Coordinate -> Bool
-isLeftEdge c = c `elem` [A1 .. A7]
+move :: Coordinate -> Direction -> Coordinate
+c `move` d = 
+    let char  = head $ show c
+        int   = show c !! 1
+        char2 = if haxis d == Move.Direction.Left then pred char else succ char
+        int2  = if vaxis d == Move.Direction.Up then pred int else succ int
+        code2 = [char2, int2]
+        validCodes = show <$> [A1 .. H8]
+    in  if code2 `notElem` validCodes then OutOfBoard else (read code2 :: Coordinate)
 
-isRightEdge :: Coordinate -> Bool
-isRightEdge c = c `elem` [H2 .. H8]
-
-isTopEdge :: Coordinate -> Bool
-isTopEdge c = c `elem` [A1, C1, E1, G1]
-
-isBottomEdge :: Coordinate -> Bool
-isBottomEdge c = c `elem` [B8, D8, F8, H8]
-
+(|>>) :: Coordinate -> Direction -> Coordinate
+(|>>) = move
