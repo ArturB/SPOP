@@ -17,19 +17,21 @@ wolfWon :: IO ()
 wolfWon = putStrLn "GAME OVER! WOLF WON\n"
 
 sheepsWon :: IO ()
-sheepsWon = putStrLn "GAME OVER! SHEEPS WON\n" 
+sheepsWon = putStrLn "GAME OVER! SHEEPS WON\n"
 
 gameLoop :: Board.Board -> IO ()
 gameLoop b = do
-    --let boardStringSize = length (show b)
+    let boardLines = 1 + length (lines (show b))
     let sheepMove = bestSheepMove 0 b
     if isNothing sheepMove then wolfWon else do
         let afterSheepMove = b >>> fst (fromJust sheepMove)
+        cursorUp boardLines
         print afterSheepMove
         threadDelay 1000000
         let wolfMove = bestWolfMove 0 afterSheepMove
         if isNothing wolfMove then sheepsWon else do
             let afterWolfMove = afterSheepMove >>> fst (fromJust wolfMove)
+            cursorUp boardLines
             print afterWolfMove 
             threadDelay 1000000
             if wolfCoord afterWolfMove `elem` [B8, D8, F8, H8] then wolfWon

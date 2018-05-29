@@ -94,10 +94,10 @@ wolfPoints brd =
         sheepsCs = sheepsCoords brd
         distFromUpperEdge = fromIntegral $ ord (show wolfC !! 1) - ord (pred '1')
         wolfSheepsAvgDist = sum (distance <$> [wolfC] <*> sheepsCs) / fromIntegral (length sheepsCs)
-    in  distFromUpperEdge + 3 * wolfSheepsAvgDist
+    in  distFromUpperEdge + 2 * wolfSheepsAvgDist
 
 sheepsPoints :: Board -> Double
-sheepsPoints brd = 5 - wolfPoints brd
+sheepsPoints brd = -1 * wolfPoints brd
 
 bestMove :: (Board -> Double) -> Board -> [Move] -> Maybe (Move,Double)
 bestMove points brd ms = 
