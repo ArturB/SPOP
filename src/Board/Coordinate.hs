@@ -6,6 +6,7 @@ Description : Possible board coordinates
 module Board.Coordinate where
 
 import           Data.Aeson
+import           Data.Char
 import           GHC.Generics
 import           Move.Direction
 
@@ -34,3 +35,12 @@ c `move` d =
 
 (|>>) :: Coordinate -> Direction -> Coordinate
 (|>>) = move
+
+distance :: Coordinate -> Coordinate -> Double
+distance c1 c2 = 
+    let x1 = fromIntegral $ ord $ head $ show c1
+        y1 = fromIntegral $ ord $ show c1 !! 1
+        x2 = fromIntegral $ ord $ head $ show c2
+        y2 = fromIntegral $ ord $ show c2 !! 1
+    in sqrt $ (x2 - x1) ** 2 + (y2 - y1) ** 2
+

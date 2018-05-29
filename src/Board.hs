@@ -5,7 +5,7 @@ Description : Game checkboard.
 
 module Board where
 
-import           Data.Aeson
+import Data.Char
 import qualified Data.Map as Map
 import           GHC.Generics
 import Board.Coordinate
@@ -38,13 +38,13 @@ instance Show Board where
 
 init :: Int -> Board
 init wolfPos = 
-    let wolfCoord = case wolfPos of
+    let wolfC = case wolfPos of
             1 -> A1
             2 -> C1
             3 -> E1
             4 -> G1 
             _ -> error invalidWolfPosition
-        maplist = (\c -> if c == wolfCoord then (c,Wolf)
+        maplist = (\c -> if c == wolfC then (c,Wolf)
                        else if c `elem` [B8, D8, F8, H8] then (c,Sheep)
                        else (c,Empty)) <$> [A1 .. H8]
     in Board $ Map.fromList maplist
@@ -52,9 +52,9 @@ init wolfPos =
 moveStatus :: Board -> Move -> Status
 moveStatus (Board b) (Move s d)
        | b Map.! s == Empty = NothingToMove
+       | s `move` d == Board.Coordinate.OutOfBoard = Move.Status.OutOfBoard
        | b Map.! (s `move` d) /= Empty = DestinationNotEmpty
        | b Map.! s == Sheep && vaxis d == Down = SheepCannotGoBack
-       | s `move` d == Board.Coordinate.OutOfBoard = Move.Status.OutOfBoard
        | otherwise = OK
 
 (??) :: Board -> Move -> Status
@@ -70,4 +70,43 @@ apply brd@(Board b) mv@(Move s d) =
 
 (>>>) :: Board -> Move -> Board
 (>>>) = apply
+
+wolfCoord :: Board -> Coordinate
+wolfCoord (Board b) = fst $ head $ Map.toList $ ( == Wolf) `Map.filter` b 
+
+sheepsCoords :: Board -> [Coordinate]
+sheepsCoords (Board b) = fst <$> Map.toList ((== Sheep) `Map.filter` b)
+
+validWolfMoves :: Board -> [Move]
+validWolfMoves brd = 
+    let possibleMoves = Move (wolfCoord brd) <$> [DownLeft .. UpRight]
+    in  (\m -> brd ?? m == OK) `filter` possibleMoves
+
+validSheepsMoves :: Board -> [Move]
+validSheepsMoves brd = 
+    let possibleMovesCombinations = (\ sp d -> (sp, d)) <$> sheepsCoords brd <*> [UpLeft .. UpRight]
+        possibleMoves = uncurry Move <$> possibleMovesCombinations
+    in  (\m -> brd ?? m == OK) `filter` possibleMoves
+
+wolfPoints :: Board -> Double
+wolfPoints brd = 
+    let wolfC = wolfCoord brd
+        sheepsCs = sheepsCoords brd
+        distFromUpperEdge = fromIntegral $ ord (show wolfC !! 1) - ord (pred '1')
+        wolfSheepsAvgDist = sum (distance <$> [wolfC] <*> sheepsCs) / fromIntegral (length sheepsCs)
+    in  distFromUpperEdge + 3 * wolfSheepsAvgDist
+
+sheepsPoints :: Board -> Double
+sheepsPoints brd = 5 - wolfPoints brd
+
+bestMove :: (Board -> Double) -> Board -> [Move] -> Maybe (Move,Double)
+bestMove points brd ms = 
+    let moves = (\m -> (m, points (brd >>> m))) <$> ms
+    in  if null moves then Nothing else Just $ foldl1' (\(m1,p1) (m2,p2) -> if p1 > p2 then (m1,p1) else (m2,p2)) moves
+
+bestWolfMove :: Int -> Board -> Maybe (Move,Double)
+bestWolfMove 0 brd = bestMove wolfPoints brd $ validWolfMoves brd
+        
+bestSheepMove :: Int -> Board -> Maybe (Move,Double)
+bestSheepMove 0 brd = bestMove sheepsPoints brd $ validSheepsMoves brd
 

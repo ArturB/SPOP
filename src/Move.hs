@@ -13,7 +13,9 @@ import Board.Coordinate
 data Move = Move {
     start :: Coordinate, 
     direction :: Direction
-} deriving (Eq, Generic, Read, Show)
+}  | AI {
+    level :: Int
+}deriving (Eq, Generic, Read, Show)
 
 instance FromJSON Move
 instance ToJSON Move
