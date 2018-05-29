@@ -15,6 +15,17 @@ module Move
 
 
 module Move.Direction
+data Direction
+DownLeft :: Direction
+DownRight :: Direction
+UpLeft :: Direction
+UpRight :: Direction
+instance GHC.Show.Show Move.Direction.Direction
+instance GHC.Read.Read Move.Direction.Direction
+instance GHC.Generics.Generic Move.Direction.Direction
+instance GHC.Classes.Eq Move.Direction.Direction
+instance Data.Aeson.Types.FromJSON.FromJSON Move.Direction.Direction
+instance Data.Aeson.Types.ToJSON.ToJSON Move.Direction.Direction
 
 
 module Move.Status
