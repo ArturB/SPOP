@@ -7,7 +7,7 @@
    > stack install
  - Main executable, called wolf.exe, is defined in app/Main.hs
  - By default, running game with no parameters, starts new game with AI playing with itself. You may display available CLI options with
-   > wolf --help \ 
+   > wolf --help \
    > stack exec wolf -- --help
  
  ## Code structure
