@@ -3,10 +3,12 @@
 ## Basic usage
  - Build project by invoking
    > stack build
+ - Install main executable to PATH with 
+   > stack install
  - Main executable, called wolf.exe, is defined in app/Main.hs
- - Game executable can be runned by
-   > stack exec wolf -- n
- - n is initial position of the wolf. Position must be positive integer from 1 to 4 and denotes wolf position on checkerboard first row, from left to right.
+ - By default, running game with no parameters, starts new game with AI playing with itself. You may display available CLI options with
+   > wolf --help
+   > stack exec wolf -- --help
  
  ## Code structure
   - Game logic is defined in src.
