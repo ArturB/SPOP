@@ -15,43 +15,74 @@ module Main where
 import Board
 import Board.Coordinate
 import Control.Concurrent
+import Control.Monad
 import Data.Maybe
 import System.Console.ANSI
+import System.Console.GetOpt
 import System.Environment
 
+-- | Delay between rounds, in microseconds
+delay :: Int
+delay = 330000
+
+-- | Available command line options
+data Option = WolfPosition String | InputFile String | AutoSave | OutputFile String deriving (Eq, Read, Show)
+
+-- | Available CLI options descriptors. 
+opts :: [OptDescr Option]
+opts = [
+    Option "w" ["wolf-position"] (OptArg (WolfPosition . fromMaybe "3") "WOLF-POS") "Initial position of the wolf. Must be integer from 1 to 4 and indicates wolf positon of the first row of the board, from left to right",
+    Option "i" ["input-file"]    (OptArg (InputFile . fromMaybe "") "INP-FILE") "Read game from file",
+    Option "s" ["auto-save"]     (NoArg AutoSave) "If set to true, the game is auto-saved every round",
+    Option "o" ["output-file"]   (OptArg (OutputFile . fromMaybe "game.was") "OUT-FILE") "Name of file to auto-save the game"
+    ]
+
+-- | Wolf winning message.
 wolfWon :: IO ()
 wolfWon = putStrLn "   GAME OVER! WOLF WON\n"
 
+-- | Sheep winning message. 
 sheepsWon :: IO ()
 sheepsWon = putStrLn "   GAME OVER! SHEEPS WON\n"
 
-gameLoop :: Board.Board -> IO ()
-gameLoop b = do
-    toFile b "game.was"
+-- | Executes game rounds in a loop. 
+gameLoop :: Bool        -- ^ If true, game if auto-saved every round. 
+         -> String      -- ^ Auto-save file name. 
+         -> Board.Board -- ^ Current board state. 
+         -> IO ()
+gameLoop autosave fileName b = do
+    when autosave $ toFile b "game.was"
     let boardLines = 1 + length (lines (show b))
     let sheepMove = bestSheepMove 0 b
     if isNothing sheepMove then wolfWon else do
         let afterSheepMove = b >>> fst (fromJust sheepMove)
         cursorUp boardLines
         print afterSheepMove
-        threadDelay 330000
+        threadDelay delay
         let wolfMove = bestWolfMove 0 afterSheepMove
         if isNothing wolfMove then sheepsWon else do
             let afterWolfMove = afterSheepMove >>> fst (fromJust wolfMove)
             cursorUp boardLines
             print afterWolfMove 
-            threadDelay 330000
+            threadDelay delay
             if wolfCoord afterWolfMove `elem` [B8, D8, F8, H8] then wolfWon
-            else gameLoop afterWolfMove
+            else gameLoop autosave fileName afterWolfMove
 
-
+-- | ENTRY POINT
 main :: IO ()
 main = do
     args <- getArgs
-    let wolfPos = read (head args) :: Int
-    let b = Board.init wolfPos
-    print b
-    threadDelay 1000000
-    gameLoop b
-
+    let (options,nonOptions,errors) = getOpt RequireOrder opts args
+    let wolfPosition = foldl (\acc x -> case x of { (WolfPosition pos) -> read pos :: Int ; _ -> acc }) 2 options
+    let inputFile = foldl (\acc x -> case x of { InputFile fileName -> fileName; _ -> acc}) "" options
+    let autoSave = foldl (\acc x -> case x of { AutoSave -> True; _ -> acc}) False options
+    let outputFile = foldl (\acc x -> case x of { OutputFile fileName -> fileName; _ -> acc}) "game.was" options
+    if inputFile /= "" then do
+        b <- Board.fromFile inputFile
+        print b >> threadDelay delay
+        gameLoop autoSave outputFile b
+    else do
+        let b = Board.init wolfPosition
+        print b >> threadDelay delay
+        gameLoop autoSave outputFile b
 

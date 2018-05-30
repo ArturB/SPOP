@@ -166,7 +166,6 @@ toFile (Board b) fileName = do
 fromFile :: String -- ^ File name. 
          -> IO Board
 fromFile fileName = do
-    bs <- ByteString.readFile fileName
-    let bmap = Map.fromList $ fromJust $ decode bs
-    return $ Board bmap
-
+    bs <- runConduitRes $ sourceFile fileName .| sinkLazy
+    let b = Map.fromList $ fromJust $ decode bs
+    return $ Board b
