@@ -32,10 +32,10 @@ data Option = WolfPosition String | InputFile String | AutoSave | OutputFile Str
 -- | Available CLI options descriptors. 
 opts :: [OptDescr Option]
 opts = [
-    Option "w" ["wolf-position"] (OptArg (WolfPosition . fromMaybe "3") "INT") "Initial position of the wolf. Must be integer from 1 to 4 and indicates wolf positon of the first row of the board, from left to right",
+    Option "w" ["wolf-position"] (OptArg (WolfPosition . fromMaybe "3") "INT") "Initial position of the wolf. Must be integer from 1 to 4 and indicates wolf positon of the first row of the board, from left to right. Default 2",
     Option "i" ["input-file"]    (OptArg (InputFile . fromMaybe "") "FILENAME") "Read game from file",
-    Option "s" ["auto-save"]     (NoArg AutoSave) "If set to true, the game is auto-saved every round",
-    Option "o" ["output-file"]   (OptArg (OutputFile . fromMaybe "game.was") "FILENAME") "Name of file to auto-save the game",
+    Option "s" ["auto-save"]     (NoArg AutoSave) "If set, the game is auto-saved every round. Default false",
+    Option "o" ["output-file"]   (OptArg (OutputFile . fromMaybe "game.was") "FILENAME") "Name of file to auto-save the game, Default game.was",
     Option "h" ["help"]          (NoArg Help) "Show usage info"
     ]
 
