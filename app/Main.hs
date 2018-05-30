@@ -20,21 +20,23 @@ import Data.Maybe
 import System.Console.ANSI
 import System.Console.GetOpt
 import System.Environment
+import System.Exit
 
 -- | Delay between rounds, in microseconds
 delay :: Int
 delay = 330000
 
 -- | Available command line options
-data Option = WolfPosition String | InputFile String | AutoSave | OutputFile String deriving (Eq, Read, Show)
+data Option = WolfPosition String | InputFile String | AutoSave | OutputFile String | Help deriving (Eq, Read, Show)
 
 -- | Available CLI options descriptors. 
 opts :: [OptDescr Option]
 opts = [
-    Option "w" ["wolf-position"] (OptArg (WolfPosition . fromMaybe "3") "WOLF-POS") "Initial position of the wolf. Must be integer from 1 to 4 and indicates wolf positon of the first row of the board, from left to right",
-    Option "i" ["input-file"]    (OptArg (InputFile . fromMaybe "") "INP-FILE") "Read game from file",
+    Option "w" ["wolf-position"] (OptArg (WolfPosition . fromMaybe "3") "INT") "Initial position of the wolf. Must be integer from 1 to 4 and indicates wolf positon of the first row of the board, from left to right",
+    Option "i" ["input-file"]    (OptArg (InputFile . fromMaybe "") "FILENAME") "Read game from file",
     Option "s" ["auto-save"]     (NoArg AutoSave) "If set to true, the game is auto-saved every round",
-    Option "o" ["output-file"]   (OptArg (OutputFile . fromMaybe "game.was") "OUT-FILE") "Name of file to auto-save the game"
+    Option "o" ["output-file"]   (OptArg (OutputFile . fromMaybe "game.was") "FILENAME") "Name of file to auto-save the game",
+    Option "h" ["help"]          (NoArg Help) "Show usage info"
     ]
 
 -- | Wolf winning message.
@@ -51,7 +53,7 @@ gameLoop :: Bool        -- ^ If true, game if auto-saved every round.
          -> Board.Board -- ^ Current board state. 
          -> IO ()
 gameLoop autosave fileName b = do
-    when autosave $ toFile b "game.was"
+    when autosave $ Board.toFile b fileName
     let boardLines = 1 + length (lines (show b))
     let sheepMove = bestSheepMove 0 b
     if isNothing sheepMove then wolfWon else do
@@ -73,6 +75,9 @@ main :: IO ()
 main = do
     args <- getArgs
     let (options,nonOptions,errors) = getOpt RequireOrder opts args
+    when (Help `elem` options) $ do
+        putStrLn $ usageInfo "wolf.exe" opts
+        exitSuccess
     let wolfPosition = foldl (\acc x -> case x of { (WolfPosition pos) -> read pos :: Int ; _ -> acc }) 2 options
     let inputFile = foldl (\acc x -> case x of { InputFile fileName -> fileName; _ -> acc}) "" options
     let autoSave = foldl (\acc x -> case x of { AutoSave -> True; _ -> acc}) False options
