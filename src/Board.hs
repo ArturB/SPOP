@@ -28,6 +28,10 @@ import           Move.Direction
 invalidWolfPosition :: String
 invalidWolfPosition = "Wolf position must be integer in range 1..4" 
 
+-- | Big double number, used in min-max algorithm
+inf :: Double
+inf = 1000
+
 -- | Checkerboard datatype
 newtype Board = Board {
     board :: Map.Map Coordinate Field -- ^ Map from Board.Coordinate to Board.Field
@@ -139,6 +143,31 @@ bestMove points brd ms =
     let moves = (\m -> (m, points (brd >>> m))) <$> ms
     in  if null moves then Nothing else Just $ foldl1' (\(m1,p1) (m2,p2) -> if p1 > p2 then (m1,p1) else (m2,p2)) moves
 
+-- | Auxiliary function, calculates the best sheeps move on the current board state. Applies 'sheepsPoints' and 'validSheepsMoves' to bestMove. 
+{-| TODO: add recursive analyze of game tree -}
+bestSheepMove :: Int                 -- ^ Depth of game tree to analyze. 
+              -> Board               -- ^ Current board state. 
+              -> Maybe (Move,Double) -- ^ The best wolf move, alogside with its rating. May be Nothing, if list of moves to analyze is empty. 
+bestSheepMove 0 brd = bestMove sheepsPoints brd $ validSheepsMoves brd
+
+calculateMovesScore :: (Board -> Double)
+     -> Board             
+     -> [Move]            
+     -> Double
+calculateMovesScore points brd ms =  maximum $ (\m -> points $ brd >>> m) <$> ms
+
+moveWithHighestScore :: [(Move,Double)]
+                    -> Maybe (Move,Double)
+moveWithHighestScore moves = if null moves then Nothing else Just $ foldl1' (\ (m1,p1)  (m2,p2) -> if p1 > p2 then (m1,p1) else (m2,p2)) moves
+
+checkIfWolfWon :: (Move, Board)
+                -> Bool
+checkIfWolfWon wolfMove = checkIfWolfWon' (snd wolfMove)
+
+checkIfWolfWon' :: Board
+                -> Bool
+checkIfWolfWon' wolfMove = wolfCoord wolfMove `elem` [B8, D8, F8, H8]
+
 -- | Auxiliary function, calculates the best wolf move on the current board state. Applies 'wolfPoints' and 'validWolfMoves' to bestMove. 
 {-| TODO: add recursive analyze of game tree. -}
 bestWolfMove :: Int                 -- ^ Depth of game tree to analyze. 
@@ -146,12 +175,36 @@ bestWolfMove :: Int                 -- ^ Depth of game tree to analyze.
              -> Maybe (Move,Double) -- ^ The best wolf move, alogside with its rating. May be Nothing, if list of moves to analyze is empty. 
 bestWolfMove 0 brd = bestMove wolfPoints brd $ validWolfMoves brd
 
--- | Auxiliary function, calculates the best sheeps move on the current board state. Applies 'sheepsPoints' and 'validSheepsMoves' to bestMove. 
-{-| TODO: add recursive analyze of game tree -}
-bestSheepMove :: Int                 -- ^ Depth of game tree to analyze. 
-              -> Board               -- ^ Current board state. 
-              -> Maybe (Move,Double) -- ^ The best wolf move, alogside with its rating. May be Nothing, if list of moves to analyze is empty. 
-bestSheepMove 0 brd = bestMove sheepsPoints brd $ validSheepsMoves brd
+bestWolfMove depth brd = 
+    let wolfMoves = validWolfMoves brd
+        afterWolfMovesBrd = (\m -> (m, brd >>> m)) <$> wolfMoves
+        winMoves = filter checkIfWolfWon afterWolfMovesBrd
+        bestWolfMoves = (\m -> (m, bestWolfMove' (pred depth) (brd >>> m))) <$> wolfMoves
+        in if null winMoves then moveWithHighestScore bestWolfMoves else Just (fst $ head winMoves, inf)
+
+bestWolfMove' :: Int
+             -> Board                      
+             -> Double
+bestWolfMove' 0 brd = 
+    let wolfMoves = validWolfMoves brd 
+        in if null wolfMoves then -inf else calculateMovesScore wolfPoints brd wolfMoves
+   
+
+bestWolfMove' depth brd = 
+    let wolfMoves = validWolfMoves brd
+        afterWolfMovesBrd = apply brd <$> wolfMoves
+        winMoves = filter checkIfWolfWon' afterWolfMovesBrd
+    in  if not $ null winMoves then inf else if null afterWolfMovesBrd then -inf else maximum $ bestShipMove' (pred depth) <$>  afterWolfMovesBrd 
+
+    
+bestShipMove' 0 brd = 
+    let sheepMoves = validSheepsMoves brd 
+        in if null sheepMoves then -inf else calculateMovesScore wolfPoints brd sheepMoves
+
+bestShipMove' depth brd = 
+    let sheepMoves = validSheepsMoves brd
+        afterSheepMoves = (\m -> brd >>> m) <$> sheepMoves
+    in if null afterSheepMoves then -inf else minimum $ bestWolfMove' (pred depth) <$>  afterSheepMoves 
 
 -- | JSONize and save board to file
 toFile :: Board  -- ^ Board state to save.

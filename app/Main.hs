@@ -61,7 +61,7 @@ gameLoop autosave fileName b = do
         cursorUp boardLines
         print afterSheepMove
         threadDelay delay
-        let wolfMove = bestWolfMove 0 afterSheepMove
+        let wolfMove = bestWolfMove 2 afterSheepMove
         if isNothing wolfMove then sheepsWon else do
             let afterWolfMove = afterSheepMove >>> fst (fromJust wolfMove)
             cursorUp boardLines
