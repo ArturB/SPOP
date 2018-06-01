@@ -56,15 +56,45 @@ gameLoop :: Bool        -- ^ If true, game if auto-saved every round.
          -> IO ()
 gameLoop autosave fileName b = do
     when autosave $ Board.toFile b fileName
-    let boardLines = 1 + length (lines (show b))
     -- let sheepMove = bestSheepMove 0 b
     let coords = sheepsCoords b
-    print $ sheepsCoords b
-    coordId <- getLine 
-    let coord = coords !! (read coordId :: Int)
+    print ( show ( sheepsCoords b) ++ "                                                                    ")
+    userInput <- getLine 
+    case userInput of
+        "r" -> resetGame autosave fileName b
+        "s" -> saveGame autosave fileName b
+        "l" -> loadGame autosave fileName b
+        "q" -> quitGame
+        _ -> gameLoop' autosave fileName b  $ coords !! (read userInput :: Int)
+
+resetGame autosave fileName x = do
+    let b = Board.init 2
+    let boardLines = 1 + length (lines (show b)) + 2
+    cursorUp boardLines
+    print b
+    gameLoop autosave fileName $b
+
+saveGame autosave fileName b = do
+    Board.toFile b fileName
+    let boardLines = 1 + length (lines (show b)) + 2
+    cursorUp boardLines
+    print b
+    gameLoop autosave fileName $ b
+
+loadGame autosave fileName x = do
+    b <- Board.fromFile fileName
+    let boardLines = 1 + length (lines (show b)) + 2
+    cursorUp boardLines
+    print b
+    gameLoop autosave fileName $ Board.init 2
+
+quitGame = print "GAME ENDED"
+
+gameLoop' autosave fileName b coord = do
+    let boardLines = 1 + length (lines (show b)) + 4
     let moves = filter (\ (Move c b) -> c == coord) $ validSheepsMoves b
     print moves
-    moveId <- getLine  
+    moveId <- getLine
     let move = moves !! (read moveId :: Int)
     let sheepMove = Just (move, 0)
     if isNothing sheepMove then wolfWon else do
@@ -79,7 +109,7 @@ gameLoop autosave fileName b = do
             print afterWolfMove 
             threadDelay delay
             if wolfCoord afterWolfMove `elem` [B8, D8, F8, H8] then wolfWon
-            else gameLoop autosave fileName afterWolfMove
+            else gameLoop autosave fileName afterWolfMove 
 
 -- | ENTRY POINT
 main :: IO ()
