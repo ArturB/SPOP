@@ -13,6 +13,8 @@ where n is initial position of the wolf, a positive integral from 1 to 4. Integr
 module Main where
 
 import Board
+import Move.Direction
+import Move
 import Board.Coordinate
 import Control.Concurrent
 import Control.Monad
@@ -55,13 +57,22 @@ gameLoop :: Bool        -- ^ If true, game if auto-saved every round.
 gameLoop autosave fileName b = do
     when autosave $ Board.toFile b fileName
     let boardLines = 1 + length (lines (show b))
-    let sheepMove = bestSheepMove 0 b
+    -- let sheepMove = bestSheepMove 0 b
+    let coords = sheepsCoords b
+    print $ sheepsCoords b
+    coordId <- getLine 
+    let coord = coords !! (read coordId :: Int)
+    let moves = filter (\ (Move c b) -> c == coord) $ validSheepsMoves b
+    print moves
+    moveId <- getLine  
+    let move = moves !! (read moveId :: Int)
+    let sheepMove = Just (move, 0)
     if isNothing sheepMove then wolfWon else do
         let afterSheepMove = b >>> fst (fromJust sheepMove)
         cursorUp boardLines
         print afterSheepMove
         threadDelay delay
-        let wolfMove = bestWolfMove 2 afterSheepMove
+        let wolfMove = bestWolfMove 3 afterSheepMove
         if isNothing wolfMove then sheepsWon else do
             let afterWolfMove = afterSheepMove >>> fst (fromJust wolfMove)
             cursorUp boardLines
@@ -90,4 +101,3 @@ main = do
         let b = Board.init wolfPosition
         print b >> threadDelay delay
         gameLoop autoSave outputFile b
-
