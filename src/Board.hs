@@ -150,20 +150,24 @@ bestSheepMove :: Int                 -- ^ Depth of game tree to analyze.
               -> Maybe (Move,Double) -- ^ The best wolf move, alogside with its rating. May be Nothing, if list of moves to analyze is empty. 
 bestSheepMove 0 brd = bestMove sheepsPoints brd $ validSheepsMoves brd
 
+-- | Calceulat moves score
 calculateMovesScore :: (Board -> Double)
      -> Board             
      -> [Move]            
      -> Double
 calculateMovesScore points brd ms =  maximum $ (\m -> points $ brd >>> m) <$> ms
 
+-- | Return move with highest score
 moveWithHighestScore :: [(Move,Double)]
                     -> Maybe (Move,Double)
 moveWithHighestScore moves = if null moves then Nothing else Just $ foldl1' (\ (m1,p1)  (m2,p2) -> if p1 > p2 then (m1,p1) else (m2,p2)) moves
 
+-- | Check if min-max alg can stop now.
 checkIfWolfWon :: (Move, Board)
                 -> Bool
 checkIfWolfWon wolfMove = checkIfWolfWon' (snd wolfMove)
 
+-- | Check if min-max alg can stop now.
 checkIfWolfWon' :: Board
                 -> Bool
 checkIfWolfWon' wolfMove = wolfCoord wolfMove `elem` [B8, D8, F8, H8]
@@ -175,6 +179,7 @@ bestWolfMove :: Int                 -- ^ Depth of game tree to analyze.
              -> Maybe (Move,Double) -- ^ The best wolf move, alogside with its rating. May be Nothing, if list of moves to analyze is empty. 
 bestWolfMove 0 brd = bestMove wolfPoints brd $ validWolfMoves brd
 
+-- | Find the best move for wolf using min-max alg
 bestWolfMove depth brd = 
     let wolfMoves = validWolfMoves brd
         afterWolfMovesBrd = (\m -> (m, brd >>> m)) <$> wolfMoves
@@ -182,6 +187,7 @@ bestWolfMove depth brd =
         bestWolfMoves = (\m -> (m, bestWolfMove' (pred depth) (brd >>> m))) <$> wolfMoves
         in if null winMoves then moveWithHighestScore bestWolfMoves else Just (fst $ head winMoves, inf)
 
+-- | Find the best move for wolf at the end of the loop  
 bestWolfMove' :: Int
              -> Board                      
              -> Double
@@ -189,19 +195,20 @@ bestWolfMove' 0 brd =
     let wolfMoves = validWolfMoves brd 
         in if null wolfMoves then -inf else calculateMovesScore wolfPoints brd wolfMoves
    
-
+-- | Find the best move for wolf in loop-step 
 bestWolfMove' depth brd = 
     let wolfMoves = validWolfMoves brd
         afterWolfMovesBrd = apply brd <$> wolfMoves
         winMoves = filter checkIfWolfWon' afterWolfMovesBrd
-    in  if not $ null winMoves then inf else if null afterWolfMovesBrd then -inf else maximum $ bestShipMove' (pred depth) <$>  afterWolfMovesBrd 
+    in  if not $ null winMoves then inf else if null afterWolfMovesBrd then -inf else maximum $ bestSheepMove' (pred depth) <$>  afterWolfMovesBrd 
 
-    
-bestShipMove' 0 brd = 
+-- | Find the best move  for sheep at the end of the loop  
+bestSheepMove' 0 brd = 
     let sheepMoves = validSheepsMoves brd 
         in if null sheepMoves then -inf else calculateMovesScore wolfPoints brd sheepMoves
 
-bestShipMove' depth brd = 
+-- | Find the best move for sheep in loop-step 
+bestSheepMove' depth brd = 
     let sheepMoves = validSheepsMoves brd
         afterSheepMoves = (\m -> brd >>> m) <$> sheepMoves
     in if null afterSheepMoves then -inf else minimum $ bestWolfMove' (pred depth) <$>  afterSheepMoves 
