@@ -91,7 +91,7 @@ loadGame autosave fileName x = do
 quitGame = print "GAME ENDED"
 
 gameLoop' autosave fileName b coord = do
-    let boardLines = 1 + length (lines (show b)) + 4
+    let boardLines = 1 + length (lines (show b)) + 7
     let moves = filter (\ (Move c b) -> c == coord) $ validSheepsMoves b
     print moves
     moveId <- getLine
