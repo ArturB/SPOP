@@ -15,6 +15,7 @@ module Main where
 import Board
 import Move.Direction
 import Move
+import Move.Status
 import Board.Coordinate
 import Control.Concurrent
 import Control.Monad
@@ -49,6 +50,11 @@ wolfWon = putStrLn "   GAME OVER! WOLF WON\n"
 sheepsWon :: IO ()
 sheepsWon = putStrLn "   GAME OVER! SHEEPS WON\n"
 
+-- | Using to split inputs.
+split :: Eq a => a -> [a] -> [[a]]
+split d [] = []
+split d s = x : split d (drop 1 y) where (x,y) = span (/= d) s
+
 -- | Executes game rounds in a loop. 
 gameLoop :: Bool        -- ^ If true, game if auto-saved every round. 
          -> String      -- ^ Auto-save file name. 
@@ -57,38 +63,71 @@ gameLoop :: Bool        -- ^ If true, game if auto-saved every round.
 gameLoop autosave fileName b = do
     when autosave $ Board.toFile b fileName
     -- let sheepMove = bestSheepMove 0 b
-    let coords = sheepsCoords b
-    print ( show ( sheepsCoords b) ++ "                                                                    ")
-    userInput <- getLine 
-    case userInput of
+    userInput <- getLine
+    let inputs = split ' ' userInput
+    if length inputs == 1 
+    then case userInput of
         "r" -> resetGame autosave fileName b
-        "s" -> saveGame autosave fileName b
-        "l" -> loadGame autosave fileName b
         "q" -> quitGame
-        _ -> gameLoop' autosave fileName b  $ coords !! (read userInput :: Int)
+        _ -> showInputError autosave fileName b "Invalid option"
+    else if length inputs == 2 
+        then case head inputs of
+            "s" -> saveGame autosave fileName (inputs !! 1) b
+            "l" -> loadGame autosave fileName (inputs !! 1) b
+            _ -> parseUserMove autosave fileName b inputs
+        else showInputError autosave fileName b "Invalidoption"
 
+-- | Resets a game
 resetGame autosave fileName x = do
     let b = Board.init 2
     let boardLines = 1 + length (lines (show b)) + 2
     cursorUp boardLines
     print b
+    putStrLn "                "
     gameLoop autosave fileName $b
 
-saveGame autosave fileName b = do
-    Board.toFile b fileName
+-- | Saves a game
+saveGame autosave fileName fileToSafe b = do
+    Board.toFile b fileToSafe
     let boardLines = 1 + length (lines (show b)) + 2
     cursorUp boardLines
     print b
+    putStrLn "                "
     gameLoop autosave fileName $ b
 
-loadGame autosave fileName x = do
-    b <- Board.fromFile fileName
+-- | Loads a game
+loadGame autosave fileName fileToLoad x = do
+    b <- Board.fromFile fileToLoad
     let boardLines = 1 + length (lines (show b)) + 2
     cursorUp boardLines
     print b
+    putStrLn "                "
     gameLoop autosave fileName $ Board.init 2
 
+-- | Quits a game
 quitGame = print "GAME ENDED"
+
+-- | Shows error
+showInputError autosave fileName b err = do
+    let boardLines = 1 + length (lines (show b)) + 2
+    cursorUp boardLines
+    print b
+    putStrLn err
+    gameLoop autosave fileName b
+
+-- | Parses user move, checks if move is valid
+parseUserMove autosave fileName b input = 
+    let boardLines = 1 + length (lines (show b))
+        coord = read $ head input :: Coordinate
+        dir = case input !! 1 of
+                "L" ->  Just UpLeft 
+                "R" -> Just UpRight
+                _ -> Nothing 
+        move =  Move coord <$> dir
+        status = moveStatus b <$> move
+        in  if isNothing dir then showInputError autosave fileName b "Invalid direction"
+            else if fromJust status == OK then gameLoop' autosave fileName b $ (fromJust move)
+            else showInputError autosave fileName b $ show $ fromJust status
 
 gameLoop' autosave fileName b coord = do
     let boardLines = 1 + length (lines (show b)) + 7
@@ -99,14 +138,15 @@ gameLoop' autosave fileName b coord = do
     let sheepMove = Just (move, 0)
     if isNothing sheepMove then wolfWon else do
         let afterSheepMove = b >>> fst (fromJust sheepMove)
-        cursorUp boardLines
+        cursorUp $ boardLines + 2
         print afterSheepMove
         threadDelay delay
         let wolfMove = bestWolfMove 3 afterSheepMove
         if isNothing wolfMove then sheepsWon else do
             let afterWolfMove = afterSheepMove >>> fst (fromJust wolfMove)
-            cursorUp boardLines
+            cursorUp $ boardLines
             print afterWolfMove 
+            putStrLn "                "
             threadDelay delay
             if wolfCoord afterWolfMove `elem` [B8, D8, F8, H8] then wolfWon
             else gameLoop autosave fileName afterWolfMove 
@@ -125,9 +165,11 @@ main = do
     let outputFile = foldl (\acc x -> case x of { OutputFile fileName -> fileName; _ -> acc}) "game.was" options
     if inputFile /= "" then do
         b <- Board.fromFile inputFile
-        print b >> threadDelay delay
+        print b 
+        putStrLn "                " >> threadDelay delay
         gameLoop autoSave outputFile b
     else do
         let b = Board.init wolfPosition
-        print b >> threadDelay delay
+        print b 
+        putStrLn "               " >> threadDelay delay
         gameLoop autoSave outputFile b
