@@ -129,13 +129,10 @@ parseUserMove autosave fileName b input =
             else if fromJust status == OK then gameLoop' autosave fileName b $ (fromJust move)
             else showInputError autosave fileName b $ show $ fromJust status
 
-gameLoop' autosave fileName b coord = do
-    let boardLines = 1 + length (lines (show b)) + 7
-    let moves = filter (\ (Move c b) -> c == coord) $ validSheepsMoves b
-    print moves
-    moveId <- getLine
-    let move = moves !! (read moveId :: Int)
-    let sheepMove = Just (move, 0)
+-- | Executes game rounds in a loop. 
+gameLoop' autosave fileName b move = do
+    let boardLines = 1 + length (lines (show b))
+    let sheepMove = Just (move , 0)
     if isNothing sheepMove then wolfWon else do
         let afterSheepMove = b >>> fst (fromJust sheepMove)
         cursorUp $ boardLines + 2
