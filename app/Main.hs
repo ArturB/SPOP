@@ -24,10 +24,16 @@ import System.Console.ANSI
 import System.Console.GetOpt
 import System.Environment
 import System.Exit
+import System.IO
+import Text.Read
 
 -- | Delay between rounds, in microseconds
 delay :: Int
-delay = 330000
+delay = 600000
+
+-- | prompt length
+promptLength :: Int
+promptLength = 32
 
 -- | Available command line options
 data Option = WolfPosition String | InputFile String | AutoSave | OutputFile String | Help deriving (Eq, Read, Show)
@@ -42,111 +48,82 @@ opts = [
     Option "h" ["help"]          (NoArg Help) "Show usage info"
     ]
 
--- | Wolf winning message.
-wolfWon :: IO ()
-wolfWon = putStrLn "   GAME OVER! WOLF WON\n"
-
--- | Sheep winning message. 
-sheepsWon :: IO ()
-sheepsWon = putStrLn "   GAME OVER! SHEEPS WON\n"
-
 -- | Using to split inputs.
 split :: Eq a => a -> [a] -> [[a]]
 split d [] = []
 split d s = x : split d (drop 1 y) where (x,y) = span (/= d) s
 
--- | Executes game rounds in a loop. 
-gameLoop :: Bool        -- ^ If true, game if auto-saved every round. 
+-- | Print gameboard as animated terminal. 
+printGameboard :: Board.Board -- ^ Board to print
+               -> Bool        -- ^ Clear previous board?
+               -> String      -- ^ Optional message to print
+               -> IO ()
+printGameboard b cls msg = do
+    let boardLines = 2 + length (lines (show b))
+    when cls (cursorUp boardLines)
+    print b
+    putStrLn ("    sheep$ " ++ replicate promptLength ' ')
+    putStr $ "\n    " ++ msg
+    putStrLn $ replicate (promptLength - length msg) ' '
+    putStrLn ""
+    cursorUp 4
+    cursorForward 11 >> hFlush stdout
+
+-- | Run one game round. 
+gameRound :: Bool      -- ^ If true, game if auto-saved every round. 
          -> String      -- ^ Auto-save file name. 
          -> Board.Board -- ^ Current board state. 
          -> IO ()
-gameLoop autosave fileName b = do
+gameRound autosave fileName b = do
     when autosave $ Board.toFile b fileName
-    -- let sheepMove = bestSheepMove 0 b
+    -- get user input
     userInput <- getLine
     let inputs = split ' ' userInput
     if length inputs == 1 
     then case userInput of
-        "r" -> resetGame autosave fileName b
-        "q" -> quitGame
-        _ -> showInputError autosave fileName b "Invalid option"
+        "r" -> do
+                let bi = Board.init 2
+                printGameboard bi True ""
+                gameRound autosave fileName bi
+        "q" -> putStrLn ""
+        _   -> printGameboard b True "Unknown command!" >> gameRound autosave fileName b
     else if length inputs == 2 
         then case head inputs of
-            "s" -> saveGame autosave fileName (inputs !! 1) b
-            "l" -> loadGame autosave fileName (inputs !! 1) b
-            _ -> parseUserMove autosave fileName b inputs
-        else showInputError autosave fileName b "Invalidoption"
+            "s" -> do
+                    let fileToSave = inputs !! 1
+                    Board.toFile b fileToSave
+                    printGameboard b True ""
+                    gameRound autosave fileName b
+            "l" -> do
+                    let fileToLoad = inputs !! 1
+                    bl <- Board.fromFile fileToLoad
+                    printGameboard bl True ""
+                    gameRound autosave fileName bl
+            _   -> do
+                let userMove = parseUserMove inputs
+                if isNothing userMove then printGameboard b True "Invalid move!" >> gameRound autosave fileName b
+                else 
+                    let status = Board.moveStatus b (fromJust userMove) 
+                    in if status /= OK then printGameboard b True (show status) >> gameRound autosave fileName b else do
+                        let b2 = b >>> fromJust userMove
+                        printGameboard b2 True "" >> cursorDown 1 >> threadDelay delay 
+                        let wolfMove = bestWolfMove 3 b2
+                        if isNothing wolfMove then printGameboard b2 True "SHEEPS WON!" >> cursorDown 4 >> cursorBackward 11 else do 
+                            let b3 = b2 >>> fst (fromJust wolfMove)
+                            if wolfCoord b3 `elem` [B8, D8, F8, H8] then printGameboard b3 True "WOLF WON!" >> cursorDown 4 >> cursorBackward 11
+                            else printGameboard b3 True "" >> gameRound autosave fileName b3
 
--- | Resets a game
-resetGame autosave fileName x = do
-    let b = Board.init 2
-    let boardLines = 1 + length (lines (show b)) + 2
-    cursorUp boardLines
-    print b
-    putStrLn "                "
-    gameLoop autosave fileName $b
-
--- | Saves a game
-saveGame autosave fileName fileToSafe b = do
-    Board.toFile b fileToSafe
-    let boardLines = 1 + length (lines (show b)) + 2
-    cursorUp boardLines
-    print b
-    putStrLn "                "
-    gameLoop autosave fileName $ b
-
--- | Loads a game
-loadGame autosave fileName fileToLoad x = do
-    b <- Board.fromFile fileToLoad
-    let boardLines = 1 + length (lines (show b)) + 2
-    cursorUp boardLines
-    print b
-    putStrLn "                "
-    gameLoop autosave fileName $ Board.init 2
-
--- | Quits a game
-quitGame = print "GAME ENDED"
-
--- | Shows error
-showInputError autosave fileName b err = do
-    let boardLines = 1 + length (lines (show b)) + 2
-    cursorUp boardLines
-    print b
-    putStrLn err
-    gameLoop autosave fileName b
+        else printGameboard b True "Invalid option" >> gameRound autosave fileName b
 
 -- | Parses user move, checks if move is valid
-parseUserMove autosave fileName b input = 
-    let boardLines = 1 + length (lines (show b))
-        coord = read $ head input :: Coordinate
-        dir = case input !! 1 of
-                "L" ->  Just UpLeft 
-                "R" -> Just UpRight
-                _ -> Nothing 
-        move =  Move coord <$> dir
-        status = moveStatus b <$> move
-        in  if isNothing dir then showInputError autosave fileName b "Invalid direction"
-            else if fromJust status == OK then gameLoop' autosave fileName b $ (fromJust move)
-            else showInputError autosave fileName b $ show $ fromJust status
-
--- | Executes game rounds in a loop. 
-gameLoop' autosave fileName b move = do
-    let boardLines = 1 + length (lines (show b))
-    let sheepMove = Just (move , 0)
-    if isNothing sheepMove then wolfWon else do
-        let afterSheepMove = b >>> fst (fromJust sheepMove)
-        cursorUp $ boardLines + 2
-        print afterSheepMove
-        threadDelay delay
-        let wolfMove = bestWolfMove 3 afterSheepMove
-        if isNothing wolfMove then sheepsWon else do
-            let afterWolfMove = afterSheepMove >>> fst (fromJust wolfMove)
-            cursorUp $ boardLines
-            print afterWolfMove 
-            putStrLn "                "
-            threadDelay delay
-            if wolfCoord afterWolfMove `elem` [B8, D8, F8, H8] then wolfWon
-            else gameLoop autosave fileName afterWolfMove 
+parseUserMove :: [String] -> Maybe Move.Move
+parseUserMove inputs = 
+    let coord = readMaybe $ head inputs :: Maybe Coordinate
+        dir = case inputs !! 1 of
+            "L" -> Just UpLeft 
+            "R" -> Just UpRight
+            _   -> Nothing 
+    in if isJust coord && isJust dir then Just (Move (fromJust coord) (fromJust dir)) else Nothing
 
 -- | ENTRY POINT
 main :: IO ()
@@ -162,11 +139,10 @@ main = do
     let outputFile = foldl (\acc x -> case x of { OutputFile fileName -> fileName; _ -> acc}) "game.was" options
     if inputFile /= "" then do
         b <- Board.fromFile inputFile
-        print b 
-        putStrLn "                " >> threadDelay delay
-        gameLoop autoSave outputFile b
+        printGameboard b False ""
+        gameRound autoSave outputFile b
     else do
         let b = Board.init wolfPosition
-        print b 
-        putStrLn "               " >> threadDelay delay
-        gameLoop autoSave outputFile b
+        printGameboard b False ""
+        gameRound autoSave outputFile b
+
