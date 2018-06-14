@@ -15,8 +15,15 @@ data Status = OK |                  -- ^ Move is valid and can be executed.
               OutOfBoard |          -- ^ Move cannot be done, because it will result in getting out the board. 
               DestinationNotEmpty | -- ^ Move cannot be done, because destination is occupied by another sheep or wolf.
               SheepCannotGoBack     -- ^ Move cannot be done, because sheeps can only move upwards. 
-              deriving (Enum, Eq, Generic, Ord, Read, Show)
+              deriving (Enum, Eq, Generic, Ord, Read)
 
 instance FromJSON Status
 instance ToJSON Status
+
+instance Show Status where
+    show OK = "OK"
+    show NothingToMove = "Nothing to move"
+    show OutOfBoard = "Out of board"
+    show DestinationNotEmpty = "Destination not empty"
+    show SheepCannotGoBack = "Sheeps cannot go back"
 

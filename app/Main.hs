@@ -19,6 +19,8 @@ import Move.Status
 import Board.Coordinate
 import Control.Concurrent
 import Control.Monad
+import Control.Monad.Trans.Maybe
+import Data.Map.Strict
 import Data.Maybe
 import System.Console.ANSI
 import System.Console.GetOpt
@@ -30,10 +32,24 @@ import Text.Read
 -- | Delay between rounds, in microseconds
 delay :: Int
 delay = 600000
-
 -- | prompt length
 promptLength :: Int
 promptLength = 32
+-- | Common strings keys
+data CommonStrings = 
+    InvalidFileName | InvalidMove | InvalidOption| MoveFormatHelp | SheepsWon | WolfWon | UnknownCommand 
+    deriving (Eq, Ord, Read)
+-- | Common strings values
+strings :: Map CommonStrings String
+strings = fromList [
+        (InvalidFileName, "Invalid file name!"),
+        (InvalidMove, "Cannot parse move!"),
+        (InvalidOption, "Cannot parse command!"),
+        (MoveFormatHelp, "Move format: <sheep-coord> L|R"),
+        (SheepsWon, "SHEEPS WON"),
+        (WolfWon, "WOLF WON"),
+        (UnknownCommand, "Unknown command!")
+    ]
 
 -- | Available command line options
 data Option = WolfPosition String | InputFile String | AutoSave | OutputFile String | Help deriving (Eq, Read, Show)
@@ -51,7 +67,49 @@ opts = [
 -- | Using to split inputs.
 split :: Eq a => a -> [a] -> [[a]]
 split d [] = []
-split d s = x : split d (drop 1 y) where (x,y) = span (/= d) s
+split d s = x : Main.split d (Prelude.drop 1 y) where (x,y) = span (/= d) s
+
+-- | Print help instead of the board
+printHelp :: Board.Board
+          -> IO ()
+printHelp b = do
+    let boardLines = 2 + length (lines (show b))
+    cursorUp boardLines
+    let helpText = "\n\
+        \    Wolf and sheep game.                        \n\
+        \    Just move sheeps to play!                   \n\
+        \    Move format: <sheep-coord> L|R              \n\
+        \    E.g. B8 L, F6 R                             \n\
+        \    Available commands:                         \n\
+        \     - h[elp]              print help           \n\
+        \     - l[oad] <file-name>  load game from file  \n\
+        \     - r[eset]             reset game           \n\
+        \     - s[ave] <file-name>  save game to file    \n\
+        \     - q[uit]              quit game            \n\
+        \                                                \n\
+        \     Press ENTER to continue...                 \n\
+        \                                                \n\
+        \                                                \n\
+        \                                                "
+    let helpTextEraser = "\n\
+        \                                                \n\
+        \                                                \n\
+        \                                                \n\
+        \                                                \n\
+        \                                                \n\
+        \                                                \n\
+        \                                                \n\
+        \                                                \n\
+        \                                                \n\
+        \                                                \n\
+        \                                                \n\
+        \                                                \n\
+        \                                                \n"
+    putStr helpText >> cursorUp 3 >> cursorBackward 16 >> hFlush stdout
+    c <- getLine
+    cursorUp $ length (lines helpText) - 1
+    putStrLn helpTextEraser
+    printGameboard b True ""
 
 -- | Print gameboard as animated terminal. 
 printGameboard :: Board.Board -- ^ Board to print
@@ -78,14 +136,21 @@ gameRound autosave fileName b = do
     when autosave $ Board.toFile b fileName
     -- get user input
     userInput <- getLine
-    let inputs = split ' ' userInput
+    let inputs = Main.split ' ' userInput
     if length inputs == 1 
     then case userInput of
         "r" -> do
                 let bi = Board.init 2
                 printGameboard bi True ""
                 gameRound autosave fileName bi
+        "reset" -> do
+                let bi = Board.init 2
+                printGameboard bi True ""
+                gameRound autosave fileName bi
         "q" -> putStrLn ""
+        "quit" -> putStrLn ""
+        "h" -> printHelp b >> gameRound autosave fileName b
+        "help" -> printHelp b >> gameRound autosave fileName b
         _   -> printGameboard b True "Unknown command!" >> gameRound autosave fileName b
     else if length inputs == 2 
         then case head inputs of
@@ -94,26 +159,44 @@ gameRound autosave fileName b = do
                     Board.toFile b fileToSave
                     printGameboard b True ""
                     gameRound autosave fileName b
+            "save" -> do
+                    let fileToSave = inputs !! 1
+                    Board.toFile b fileToSave
+                    printGameboard b True ""
+                    gameRound autosave fileName b
             "l" -> do
                     let fileToLoad = inputs !! 1
-                    bl <- Board.fromFile fileToLoad
-                    printGameboard bl True ""
-                    gameRound autosave fileName bl
+                    bl <- runMaybeT $ Board.fromFile fileToLoad
+                    if isNothing bl then do
+                        printGameboard b True $ strings ! InvalidFileName
+                        gameRound autosave fileName b
+                    else do 
+                        printGameboard (fromJust bl) True ""
+                        gameRound autosave fileName (fromJust bl)
+            "load" -> do
+                    let fileToLoad = inputs !! 1
+                    bl <- runMaybeT $ Board.fromFile fileToLoad
+                    if isNothing bl then do
+                        printGameboard b True $ strings ! InvalidFileName
+                        gameRound autosave fileName b
+                    else do 
+                        printGameboard (fromJust bl) True ""
+                        gameRound autosave fileName (fromJust bl)
             _   -> do
                 let userMove = parseUserMove inputs
-                if isNothing userMove then printGameboard b True "Invalid move!" >> gameRound autosave fileName b
+                if isNothing userMove then printGameboard b True (strings ! InvalidMove) >> gameRound autosave fileName b
                 else 
                     let status = Board.moveStatus b (fromJust userMove) 
-                    in if status /= OK then printGameboard b True (show status) >> gameRound autosave fileName b else do
+                    in if status /= OK then printGameboard b True (show status ++ "!") >> gameRound autosave fileName b else do
                         let b2 = b >>> fromJust userMove
                         printGameboard b2 True "" >> cursorDown 1 >> threadDelay delay 
                         let wolfMove = bestWolfMove 3 b2
-                        if isNothing wolfMove then printGameboard b2 True "SHEEPS WON!" >> cursorDown 4 >> cursorBackward 11 else do 
+                        if isNothing wolfMove then printGameboard b2 True (strings ! SheepsWon) >> cursorDown 4 >> cursorBackward 11 else do 
                             let b3 = b2 >>> fst (fromJust wolfMove)
-                            if wolfCoord b3 `elem` [B8, D8, F8, H8] then printGameboard b3 True "WOLF WON!" >> cursorDown 4 >> cursorBackward 11
+                            if wolfCoord b3 `elem` [B8, D8, F8, H8] then printGameboard b3 True (strings ! WolfWon) >> cursorDown 4 >> cursorBackward 11
                             else printGameboard b3 True "" >> gameRound autosave fileName b3
 
-        else printGameboard b True "Invalid option" >> gameRound autosave fileName b
+        else printGameboard b True (strings ! InvalidOption) >> gameRound autosave fileName b
 
 -- | Parses user move, checks if move is valid
 parseUserMove :: [String] -> Maybe Move.Move
@@ -133,14 +216,16 @@ main = do
     when (Help `elem` options) $ do
         putStrLn $ usageInfo "wolf.exe" opts
         exitSuccess
-    let wolfPosition = foldl (\acc x -> case x of { (WolfPosition pos) -> read pos :: Int ; _ -> acc }) 2 options
-    let inputFile = foldl (\acc x -> case x of { InputFile fileName -> fileName; _ -> acc}) "" options
-    let autoSave = foldl (\acc x -> case x of { AutoSave -> True; _ -> acc}) False options
-    let outputFile = foldl (\acc x -> case x of { OutputFile fileName -> fileName; _ -> acc}) "game.was" options
+    let wolfPosition = Prelude.foldl (\acc x -> case x of { (WolfPosition pos) -> read pos :: Int ; _ -> acc }) 2 options
+    let inputFile = Prelude.foldl (\acc x -> case x of { InputFile fileName -> fileName; _ -> acc}) "" options
+    let autoSave = Prelude.foldl (\acc x -> case x of { AutoSave -> True; _ -> acc}) False options
+    let outputFile = Prelude.foldl (\acc x -> case x of { OutputFile fileName -> fileName; _ -> acc}) "game.was" options
     if inputFile /= "" then do
-        b <- Board.fromFile inputFile
-        printGameboard b False ""
-        gameRound autoSave outputFile b
+        b <- runMaybeT $ Board.fromFile inputFile
+        if isNothing b then putStrLn (strings ! InvalidFileName)
+        else do
+            printGameboard (fromJust b) False ""
+            gameRound autoSave outputFile (fromJust b)
     else do
         let b = Board.init wolfPosition
         printGameboard b False ""

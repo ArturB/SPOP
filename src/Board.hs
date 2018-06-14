@@ -11,6 +11,7 @@ module Board where
 import           Board.Coordinate
 import           Board.Field
 import           Conduit
+import           Control.Monad.Trans.Maybe
 import           Data.Aeson
 import qualified Data.ByteString.Lazy as ByteString
 --import qualified Data.ByteString.Builder as Builder
@@ -23,6 +24,7 @@ import           GHC.Generics
 import           Move
 import           Move.Status
 import           Move.Direction
+import           System.Directory
 
 -- | Error message, displayed if initial position of the wolf is not in the range 1..4. 
 invalidWolfPosition :: String
@@ -224,8 +226,11 @@ toFile (Board b) fileName = do
 
 -- | Read board state from file
 fromFile :: String -- ^ File name. 
-         -> IO Board
+         -> MaybeT IO Board
 fromFile fileName = do
-    bs <- runConduitRes $ sourceFile fileName .| sinkLazy
-    let b = Map.fromList $ fromJust $ decode bs
-    return $ Board b
+    fileExists <- lift $ doesFileExist fileName
+    if fileExists then do
+        bs <- lift $ runConduitRes $ sourceFile fileName .| sinkLazy
+        let b = Map.fromList $ fromJust $ decode bs
+        return $ Board b
+    else MaybeT $ return Nothing

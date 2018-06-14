@@ -34,29 +34,37 @@ dependencies:
 
 library:
   source-dirs: src
+  ghc-options:
+  - -O2
   dependencies:
   - aeson
   - bytestring
   - conduit
   - containers
+  - directory
+  - transformers
 
 executables:
   wolf:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
+    - -O2
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
     - ansi-terminal
+    - containers
     - SPOP
+    - transformers
 
 tests:
   wolf-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
+    - -O2
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
